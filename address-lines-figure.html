@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address Lines and Memory Size</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #1a1d23;
+            --bg-card: #242830;
+            --bg-highlight: #2a3040;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --text-muted: #6b7280;
+            --accent-blue: #4a9eff;
+            --accent-green: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-purple: #a78bfa;
+            --border: #363b44;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Key insight box */
+        .insight-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent-blue);
+            border-radius: 0 8px 8px 0;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .insight-box p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .insight-box .formula {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg-highlight);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .formula .n { color: var(--accent-amber); }
+        .formula .result { color: var(--accent-green); }
+
+        /* Reference table */
+        .reference-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .reference-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .ref-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .ref-card:hover {
+            background: var(--bg-highlight);
+            border-color: var(--accent-blue);
+        }
+
+        .ref-card.highlight {
+            background: var(--bg-highlight);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.15);
+        }
+
+        .ref-lines {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-amber);
+        }
+
+        .ref-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+
+        .ref-size {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--accent-green);
+            margin-top: 0.5rem;
+        }
+
+        .ref-bytes {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Interactive calculator */
+        .calculator-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .calc-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .calc-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .calc-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .calc-input {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 2rem;
+            font-weight: 600;
+            width: 120px;
+            text-align: center;
+            background: var(--bg-dark);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--accent-amber);
+            padding: 0.5rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .calc-input:focus {
+            border-color: var(--accent-amber);
+        }
+
+        .calc-equals {
+            font-size: 2rem;
+            color: var(--text-muted);
+        }
+
+        .calc-result {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--accent-green);
+            min-width: 180px;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            background: var(--bg-dark);
+            border-radius: 8px;
+        }
+
+        .calc-result-detail {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 1rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        /* Slider */
+        .slider-container {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .slider-min, .slider-max {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 30px;
+            text-align: center;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: var(--bg-dark);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--accent-amber);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-amber);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Mental math tips */
+        .tips-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .tip {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tip:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .tip:first-of-type {
+            padding-top: 0;
+        }
+
+        .tip-marker {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-purple);
+            font-weight: 600;
+            min-width: 24px;
+        }
+
+        .tip-content {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .tip-content strong {
+            color: var(--text-primary);
+        }
+
+        .tip-content code {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg-highlight);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.4rem; }
+            .calc-input, .calc-result { font-size: 1.5rem; }
+            .calc-input { width: 90px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Address Lines & Memory Size</h1>
+        <p class="subtitle">How many address lines do you need?</p>
+
+        <div class="insight-box">
+            <p>Each address line doubles the number of locations you can address. With <strong>n</strong> address lines, you can address <strong>2<sup>n</sup></strong> unique locations.</p>
+            <div class="formula">
+                <span class="n">n</span> address lines → <span class="result">2<sup>n</sup></span> addressable locations
+            </div>
+        </div>
+
+        <!-- Reference landmarks -->
+        <div class="reference-section">
+            <h2 class="section-title">Landmark Values (memorize these)</h2>
+            <div class="reference-table">
+                <div class="ref-card" data-lines="10">
+                    <div class="ref-lines">10</div>
+                    <div class="ref-label">lines</div>
+                    <div class="ref-size">1 K</div>
+                    <div class="ref-bytes">1,024</div>
+                </div>
+                <div class="ref-card" data-lines="16">
+                    <div class="ref-lines">16</div>
+                    <div class="ref-label">lines</div>
+                    <div class="ref-size">64 K</div>
+                    <div class="ref-bytes">65,536</div>
+                </div>
+                <div class="ref-card" data-lines="20">
+                    <div class="ref-lines">20</div>
+                    <div class="ref-label">lines</div>
+                    <div class="ref-size">1 M</div>
+                    <div class="ref-bytes">1,048,576</div>
+                </div>
+                <div class="ref-card" data-lines="30">
+                    <div class="ref-lines">30</div>
+                    <div class="ref-label">lines</div>
+                    <div class="ref-size">1 G</div>
+                    <div class="ref-bytes">1,073,741,824</div>
+                </div>
+                <div class="ref-card" data-lines="32">
+                    <div class="ref-lines">32</div>
+                    <div class="ref-label">lines</div>
+                    <div class="ref-size">4 G</div>
+                    <div class="ref-bytes">4,294,967,296</div>
+                </div>
+                <div class="ref-card" data-lines="40">
+                    <div class="ref-lines">40</div>
+                    <div class="ref-label">lines</div>
+                    <div class="ref-size">1 T</div>
+                    <div class="ref-bytes">1,099,511,627,776</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive calculator -->
+        <div class="calculator-section">
+            <h2 class="section-title">Try It</h2>
+            <div class="calc-row">
+                <div class="calc-group">
+                    <span class="calc-label">Address Lines</span>
+                    <input type="number" class="calc-input" id="addressLines" value="10" min="1" max="64">
+                </div>
+                <span class="calc-equals">=</span>
+                <div class="calc-group">
+                    <span class="calc-label">Memory Size</span>
+                    <div class="calc-result" id="memorySize">1 K</div>
+                </div>
+            </div>
+            <div class="calc-result-detail" id="exactValue">2<sup>10</sup> = 1,024 locations</div>
+            
+            <div class="slider-container">
+                <div class="slider-wrapper">
+                    <span class="slider-min">1</span>
+                    <input type="range" id="slider" min="1" max="48" value="10">
+                    <span class="slider-max">48</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mental math tips -->
+        <div class="tips-section">
+            <h2 class="section-title">Mental Math Shortcuts</h2>
+            <div class="tip">
+                <span class="tip-marker">①</span>
+                <div class="tip-content">
+                    <strong>Anchor on 10 = 1K.</strong> This is your starting point. Every 10 additional lines multiplies by 1,000 (roughly).
+                </div>
+            </div>
+            <div class="tip">
+                <span class="tip-marker">②</span>
+                <div class="tip-content">
+                    <strong>The K-M-G-T ladder:</strong> <code>10→1K</code>, <code>20→1M</code>, <code>30→1G</code>, <code>40→1T</code>
+                </div>
+            </div>
+            <div class="tip">
+                <span class="tip-marker">③</span>
+                <div class="tip-content">
+                    <strong>Quick adjustments:</strong> Each additional line doubles the size. So 11 lines = 2K, 12 lines = 4K, 13 lines = 8K.
+                </div>
+            </div>
+            <div class="tip">
+                <span class="tip-marker">④</span>
+                <div class="tip-content">
+                    <strong>Why 32 bits = 4 GB:</strong> 32 = 30 + 2, so that's 1G × 4 = 4G. This is why 32-bit systems maxed out at 4 GB RAM.
+                </div>
+            </div>
+            <div class="tip">
+                <span class="tip-marker">⑤</span>
+                <div class="tip-content">
+                    <strong>Working backwards:</strong> Need 256 locations? That's 2<sup>8</sup>, so 8 address lines. Need 1 million? That's ~2<sup>20</sup>, so 20 lines.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('addressLines');
+        const slider = document.getElementById('slider');
+        const sizeDisplay = document.getElementById('memorySize');
+        const detailDisplay = document.getElementById('exactValue');
+        const refCards = document.querySelectorAll('.ref-card');
+
+        function formatSize(n) {
+            if (n >= 40) {
+                const tb = Math.pow(2, n - 40);
+                return tb >= 1024 ? `${tb / 1024} P` : `${tb} T`;
+            } else if (n >= 30) {
+                const gb = Math.pow(2, n - 30);
+                return gb >= 1024 ? `${gb / 1024} T` : `${gb} G`;
+            } else if (n >= 20) {
+                const mb = Math.pow(2, n - 20);
+                return mb >= 1024 ? `${mb / 1024} G` : `${mb} M`;
+            } else if (n >= 10) {
+                const kb = Math.pow(2, n - 10);
+                return kb >= 1024 ? `${kb / 1024} M` : `${kb} K`;
+            } else {
+                return `${Math.pow(2, n)}`;
+            }
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function update(n) {
+            n = Math.max(1, Math.min(64, parseInt(n) || 1));
+            
+            sizeDisplay.textContent = formatSize(n);
+            
+            // For large numbers, use BigInt
+            if (n <= 52) {
+                const exact = Math.pow(2, n);
+                detailDisplay.innerHTML = `2<sup>${n}</sup> = ${formatNumber(exact)} locations`;
+            } else {
+                const bigVal = BigInt(2) ** BigInt(n);
+                detailDisplay.innerHTML = `2<sup>${n}</sup> = ${bigVal.toLocaleString()} locations`;
+            }
+
+            // Highlight matching reference card
+            refCards.forEach(card => {
+                if (parseInt(card.dataset.lines) === n) {
+                    card.classList.add('highlight');
+                } else {
+                    card.classList.remove('highlight');
+                }
+            });
+        }
+
+        input.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value) || 1;
+            slider.value = Math.min(48, Math.max(1, val));
+            update(val);
+        });
+
+        slider.addEventListener('input', (e) => {
+            input.value = e.target.value;
+            update(e.target.value);
+        });
+
+        // Click on reference cards to set value
+        refCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const lines = card.dataset.lines;
+                input.value = lines;
+                slider.value = lines;
+                update(lines);
+            });
+        });
+
+        // Initialize
+        update(10);
+    </script>
+</body>
+</html>
