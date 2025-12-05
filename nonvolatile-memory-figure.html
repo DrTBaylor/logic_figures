@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nonvolatile Memory Technologies</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #1a1d23;
+            --bg-card: #242830;
+            --bg-card-hover: #2a2f3a;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --text-muted: #6b7280;
+            --accent-blue: #4a9eff;
+            --accent-green: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-purple: #a78bfa;
+            --accent-red: #f87171;
+            --border: #363b44;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Timeline axis */
+        .timeline-section {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .timeline-line {
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, var(--border) 0%, var(--accent-blue) 50%, var(--border) 100%);
+        }
+
+        .timeline-dates {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: -0.5rem;
+            padding: 0 1rem;
+        }
+
+        /* Memory cards grid */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .memory-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .memory-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .memory-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .memory-card.legacy::before { background: var(--text-muted); }
+        .memory-card.modern::before { background: var(--accent-green); }
+        .memory-card.emerging::before { background: var(--accent-purple); }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .card-acronym {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-secondary);
+        }
+
+        .card-year {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-description {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        /* Specs bars */
+        .specs {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .spec-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .spec-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            width: 70px;
+            text-transform: uppercase;
+        }
+
+        .spec-bar-container {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .spec-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .spec-bar.read { background: var(--accent-blue); }
+        .spec-bar.write { background: var(--accent-amber); }
+        .spec-bar.endurance { background: var(--accent-green); }
+
+        .spec-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            width: 50px;
+            text-align: right;
+        }
+
+        /* Category labels */
+        .category-row {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .category-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .category-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        .category-dot.legacy { background: var(--text-muted); }
+        .category-dot.modern { background: var(--accent-green); }
+        .category-dot.emerging { background: var(--accent-purple); }
+
+        /* Floating gate diagram */
+        .diagram-section {
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .diagram-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .transistor-diagram {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            flex-wrap: wrap;
+        }
+
+        .transistor-state {
+            text-align: center;
+        }
+
+        .transistor-svg {
+            margin-bottom: 0.75rem;
+        }
+
+        .state-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .state-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .state-value.zero { color: var(--accent-amber); }
+        .state-value.one { color: var(--accent-blue); }
+
+        /* Footer note */
+        .footer-note {
+            margin-top: 2rem;
+            padding: 1rem 1.25rem;
+            background: rgba(74, 158, 255, 0.08);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .footer-note strong {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.4rem; }
+            .transistor-diagram { gap: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Nonvolatile Memory Technologies</h1>
+        <p class="subtitle">Evolution from ROM to modern Flash and emerging technologies</p>
+
+        <div class="category-row">
+            <div class="category-badge">
+                <div class="category-dot legacy"></div>
+                <span>Legacy / Historical</span>
+            </div>
+            <div class="category-badge">
+                <div class="category-dot modern"></div>
+                <span>Modern / Dominant</span>
+            </div>
+            <div class="category-badge">
+                <div class="category-dot emerging"></div>
+                <span>Emerging</span>
+            </div>
+        </div>
+
+        <div class="memory-grid">
+            <!-- Mask ROM -->
+            <div class="memory-card legacy">
+                <div class="card-header">
+                    <span class="card-title">Mask ROM</span>
+                    <span class="card-acronym">ROM</span>
+                </div>
+                <div class="card-year">~1960s</div>
+                <p class="card-description">
+                    Data permanently encoded during manufacturing via photolithographic masks. 
+                    True "read-only" — cannot be modified after fabrication.
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 85%"></div>
+                        </div>
+                        <span class="spec-value">Fast</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 0%"></div>
+                        </div>
+                        <span class="spec-value">N/A</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 0%"></div>
+                        </div>
+                        <span class="spec-value">N/A</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EPROM -->
+            <div class="memory-card legacy">
+                <div class="card-header">
+                    <span class="card-title">EPROM</span>
+                    <span class="card-acronym">UV Erasable</span>
+                </div>
+                <div class="card-year">1971</div>
+                <p class="card-description">
+                    Erased by UV light through quartz window (15-20 min exposure). 
+                    The classic chip with the little window on top.
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 75%"></div>
+                        </div>
+                        <span class="spec-value">~150ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 5%"></div>
+                        </div>
+                        <span class="spec-value">Minutes</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 10%"></div>
+                        </div>
+                        <span class="spec-value">~100</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EEPROM -->
+            <div class="memory-card legacy">
+                <div class="card-header">
+                    <span class="card-title">EEPROM</span>
+                    <span class="card-acronym">Byte-Erasable</span>
+                </div>
+                <div class="card-year">1978</div>
+                <p class="card-description">
+                    Electrically erasable at byte granularity. Still used in microcontrollers 
+                    for small config storage (I²C serial EEPROMs).
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 70%"></div>
+                        </div>
+                        <span class="spec-value">~200ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 15%"></div>
+                        </div>
+                        <span class="spec-value">~5ms</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 40%"></div>
+                        </div>
+                        <span class="spec-value">100K</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOR Flash -->
+            <div class="memory-card modern">
+                <div class="card-header">
+                    <span class="card-title">NOR Flash</span>
+                    <span class="card-acronym">XIP Capable</span>
+                </div>
+                <div class="card-year">1988</div>
+                <p class="card-description">
+                    Random-access reads, execute-in-place (XIP) capable. 
+                    Used for firmware/BIOS storage. Block-erasable.
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 90%"></div>
+                        </div>
+                        <span class="spec-value">~70ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 35%"></div>
+                        </div>
+                        <span class="spec-value">~10μs/B</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 50%"></div>
+                        </div>
+                        <span class="spec-value">100K</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NAND Flash -->
+            <div class="memory-card modern">
+                <div class="card-header">
+                    <span class="card-title">NAND Flash</span>
+                    <span class="card-acronym">High Density</span>
+                </div>
+                <div class="card-year">1989</div>
+                <p class="card-description">
+                    Page-based access, optimized for density and sequential ops. 
+                    Dominant in SSDs, SD cards, USB drives. 3D stacking now common.
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 80%"></div>
+                        </div>
+                        <span class="spec-value">~25μs</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 60%"></div>
+                        </div>
+                        <span class="spec-value">~300μs</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 35%"></div>
+                        </div>
+                        <span class="spec-value">3K-100K</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3D XPoint -->
+            <div class="memory-card emerging">
+                <div class="card-header">
+                    <span class="card-title">3D XPoint</span>
+                    <span class="card-acronym">Optane</span>
+                </div>
+                <div class="card-year">2015</div>
+                <p class="card-description">
+                    Intel/Micron technology using phase-change materials. 
+                    Byte-addressable with DRAM-like latency. (Discontinued 2022)
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 95%"></div>
+                        </div>
+                        <span class="spec-value">~10μs</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 85%"></div>
+                        </div>
+                        <span class="spec-value">~10μs</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 95%"></div>
+                        </div>
+                        <span class="spec-value">10⁹+</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MRAM -->
+            <div class="memory-card emerging">
+                <div class="card-header">
+                    <span class="card-title">MRAM</span>
+                    <span class="card-acronym">Magnetic</span>
+                </div>
+                <div class="card-year">~2016</div>
+                <p class="card-description">
+                    Stores bits via magnetic tunnel junctions. SRAM-like speed, 
+                    unlimited endurance, radiation-hard. Growing in embedded use.
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 98%"></div>
+                        </div>
+                        <span class="spec-value">~10ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 95%"></div>
+                        </div>
+                        <span class="spec-value">~10ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 100%"></div>
+                        </div>
+                        <span class="spec-value">10¹⁵+</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ReRAM -->
+            <div class="memory-card emerging">
+                <div class="card-header">
+                    <span class="card-title">ReRAM</span>
+                    <span class="card-acronym">Resistive</span>
+                </div>
+                <div class="card-year">~2019</div>
+                <p class="card-description">
+                    Resistance switching in metal-oxide films. Simple structure, 
+                    good scaling potential. Used in some MCUs as embedded NVM.
+                </p>
+                <div class="specs">
+                    <div class="spec-row">
+                        <span class="spec-label">Read</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar read" style="width: 92%"></div>
+                        </div>
+                        <span class="spec-value">~50ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Write</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar write" style="width: 88%"></div>
+                        </div>
+                        <span class="spec-value">~50ns</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">Cycles</span>
+                        <div class="spec-bar-container">
+                            <div class="spec-bar endurance" style="width: 70%"></div>
+                        </div>
+                        <span class="spec-value">10⁶-10¹²</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Gate Diagram -->
+        <div class="diagram-section">
+            <h2 class="diagram-title">Floating-Gate Transistor — The Physics Behind Flash Memory</h2>
+            <div class="transistor-diagram">
+                <div class="transistor-state">
+                    <svg class="transistor-svg" width="160" height="120" viewBox="0 0 160 120">
+                        <!-- Substrate -->
+                        <rect x="10" y="85" width="140" height="25" fill="#3d4451" stroke="#4a9eff" stroke-width="1"/>
+                        <text x="80" y="102" text-anchor="middle" fill="#9aa0a6" font-size="10" font-family="IBM Plex Mono">P-substrate</text>
+                        
+                        <!-- Source/Drain -->
+                        <rect x="20" y="70" width="30" height="20" fill="#4a9eff" rx="2"/>
+                        <text x="35" y="65" text-anchor="middle" fill="#9aa0a6" font-size="9" font-family="IBM Plex Mono">S</text>
+                        <rect x="110" y="70" width="30" height="20" fill="#4a9eff" rx="2"/>
+                        <text x="125" y="65" text-anchor="middle" fill="#9aa0a6" font-size="9" font-family="IBM Plex Mono">D</text>
+                        
+                        <!-- Gate oxide -->
+                        <rect x="55" y="55" width="50" height="8" fill="#6b7280"/>
+                        
+                        <!-- Floating gate (empty) -->
+                        <rect x="55" y="40" width="50" height="12" fill="#242830" stroke="#fbbf24" stroke-width="2" rx="1"/>
+                        <text x="80" y="50" text-anchor="middle" fill="#fbbf24" font-size="8" font-family="IBM Plex Mono">FG</text>
+                        
+                        <!-- Control gate -->
+                        <rect x="55" y="20" width="50" height="12" fill="#34d399" rx="1"/>
+                        <text x="80" y="30" text-anchor="middle" fill="#1a1d23" font-size="8" font-family="IBM Plex Mono">CG</text>
+                        
+                        <!-- Insulator -->
+                        <rect x="55" y="33" width="50" height="6" fill="#4b5563"/>
+                        
+                        <!-- Gate terminal -->
+                        <line x1="80" y1="8" x2="80" y2="20" stroke="#34d399" stroke-width="2"/>
+                        <text x="80" y="6" text-anchor="middle" fill="#9aa0a6" font-size="9" font-family="IBM Plex Mono">G</text>
+                    </svg>
+                    <div class="state-label">No trapped electrons</div>
+                    <div class="state-label">Transistor conducts</div>
+                    <div class="state-value one">1</div>
+                </div>
+
+                <div class="transistor-state">
+                    <svg class="transistor-svg" width="160" height="120" viewBox="0 0 160 120">
+                        <!-- Substrate -->
+                        <rect x="10" y="85" width="140" height="25" fill="#3d4451" stroke="#4a9eff" stroke-width="1"/>
+                        <text x="80" y="102" text-anchor="middle" fill="#9aa0a6" font-size="10" font-family="IBM Plex Mono">P-substrate</text>
+                        
+                        <!-- Source/Drain -->
+                        <rect x="20" y="70" width="30" height="20" fill="#4a9eff" rx="2"/>
+                        <text x="35" y="65" text-anchor="middle" fill="#9aa0a6" font-size="9" font-family="IBM Plex Mono">S</text>
+                        <rect x="110" y="70" width="30" height="20" fill="#4a9eff" rx="2"/>
+                        <text x="125" y="65" text-anchor="middle" fill="#9aa0a6" font-size="9" font-family="IBM Plex Mono">D</text>
+                        
+                        <!-- Gate oxide -->
+                        <rect x="55" y="55" width="50" height="8" fill="#6b7280"/>
+                        
+                        <!-- Floating gate (with electrons) -->
+                        <rect x="55" y="40" width="50" height="12" fill="#fbbf24" stroke="#fbbf24" stroke-width="2" rx="1"/>
+                        <text x="68" y="49" fill="#1a1d23" font-size="7" font-family="IBM Plex Mono">e⁻</text>
+                        <text x="80" y="49" fill="#1a1d23" font-size="7" font-family="IBM Plex Mono">e⁻</text>
+                        <text x="92" y="49" fill="#1a1d23" font-size="7" font-family="IBM Plex Mono">e⁻</text>
+                        
+                        <!-- Control gate -->
+                        <rect x="55" y="20" width="50" height="12" fill="#34d399" rx="1"/>
+                        <text x="80" y="30" text-anchor="middle" fill="#1a1d23" font-size="8" font-family="IBM Plex Mono">CG</text>
+                        
+                        <!-- Insulator -->
+                        <rect x="55" y="33" width="50" height="6" fill="#4b5563"/>
+                        
+                        <!-- Gate terminal -->
+                        <line x1="80" y1="8" x2="80" y2="20" stroke="#34d399" stroke-width="2"/>
+                        <text x="80" y="6" text-anchor="middle" fill="#9aa0a6" font-size="9" font-family="IBM Plex Mono">G</text>
+                    </svg>
+                    <div class="state-label">Electrons trapped in FG</div>
+                    <div class="state-label">Higher V<sub>th</sub>, blocks current</div>
+                    <div class="state-value zero">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <strong>Key insight:</strong> Modern NAND Flash with controller-managed wear leveling and parallel architectures 
+            achieves GB/s write speeds—far from the "slow writes" of classical ROM. The physics (charge trapping) 
+            is the same, but system-level engineering has transformed the practical experience.
+        </div>
+    </div>
+</body>
+</html>
