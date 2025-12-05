@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Hierarchy - Interactive Diagram</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-card: #121a2a;
+            --bg-hover: #1a2540;
+            --text-primary: #e8edf5;
+            --text-secondary: #8896b0;
+            --accent-registers: #ff6b6b;
+            --accent-cache-l1: #ffa94d;
+            --accent-cache-l2: #ffd43b;
+            --accent-cache-l3: #a9e34b;
+            --accent-main: #69db7c;
+            --accent-ssd: #38d9a9;
+            --accent-hdd: #4dabf7;
+            --accent-cloud: #748ffc;
+            --glow-intensity: 0.4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background grid */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-registers), var(--accent-cloud));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Pyramid Container */
+        .pyramid-container {
+            position: relative;
+            padding: 20px;
+        }
+
+        .pyramid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pyramid-level {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            clip-path: polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%);
+            padding: 18px 30px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            border: none;
+            outline: none;
+        }
+
+        .pyramid-level::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            clip-path: polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%);
+            background: var(--bg-card);
+            z-index: -1;
+            transition: background 0.3s ease;
+        }
+
+        .pyramid-level:hover::before {
+            background: var(--bg-hover);
+        }
+
+        .pyramid-level.active {
+            transform: scale(1.03);
+            z-index: 10;
+        }
+
+        .pyramid-level.active::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            clip-path: polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%);
+            background: inherit;
+            opacity: 0.3;
+            filter: blur(15px);
+            z-index: -2;
+        }
+
+        /* Level sizes - pyramid shape */
+        .level-registers { width: 180px; background: var(--accent-registers); }
+        .level-l1 { width: 240px; background: var(--accent-cache-l1); }
+        .level-l2 { width: 300px; background: var(--accent-cache-l2); }
+        .level-l3 { width: 380px; background: var(--accent-cache-l3); }
+        .level-main { width: 480px; background: var(--accent-main); }
+        .level-ssd { width: 580px; background: var(--accent-ssd); }
+        .level-hdd { width: 680px; background: var(--accent-hdd); }
+        .level-cloud { width: 780px; background: var(--accent-cloud); }
+
+        .pyramid-level span {
+            position: relative;
+            z-index: 2;
+            color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 10px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+
+        /* Axis labels */
+        .axis-labels {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding: 30px 0;
+        }
+
+        .axis-left {
+            left: -100px;
+            text-align: right;
+        }
+
+        .axis-right {
+            right: -100px;
+            text-align: left;
+        }
+
+        .axis-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+        }
+
+        .axis-right .axis-label {
+            transform: rotate(0deg);
+        }
+
+        .axis-arrow {
+            font-size: 1.5rem;
+            margin: 8px 0;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: sticky;
+            top: 20px;
+            transition: all 0.4s ease;
+        }
+
+        .info-panel.has-selection {
+            border-color: var(--current-color, rgba(255,255,255,0.15));
+            box-shadow: 0 0 40px rgba(var(--current-color-rgb, 255,255,255), 0.1);
+        }
+
+        .info-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .info-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .info-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .info-category {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+        }
+
+        .specs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .spec-item {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .spec-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+
+        .spec-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .spec-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .spec-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .spec-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Comparison visualization */
+        .comparison-section {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .comparison-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .comparison-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .comparison-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            width: 70px;
+            color: var(--text-secondary);
+        }
+
+        .comparison-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .comparison-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Default state */
+        .default-message {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .default-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .default-text {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Legend */
+        .legend {
+            margin-top: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            h1 { font-size: 2rem; }
+            .pyramid-level { font-size: 0.8rem; padding: 14px 20px; }
+            .level-registers { width: 140px; }
+            .level-l1 { width: 180px; }
+            .level-l2 { width: 220px; }
+            .level-l3 { width: 280px; }
+            .level-main { width: 340px; }
+            .level-ssd { width: 400px; }
+            .level-hdd { width: 460px; }
+            .level-cloud { width: 520px; }
+            .axis-labels { display: none; }
+        }
+
+        /* Entrance animations */
+        .pyramid-level {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .level-registers { animation-delay: 0.1s; }
+        .level-l1 { animation-delay: 0.15s; }
+        .level-l2 { animation-delay: 0.2s; }
+        .level-l3 { animation-delay: 0.25s; }
+        .level-main { animation-delay: 0.3s; }
+        .level-ssd { animation-delay: 0.35s; }
+        .level-hdd { animation-delay: 0.4s; }
+        .level-cloud { animation-delay: 0.45s; }
+
+        /* Pulse animation for active */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+        }
+
+        .pyramid-level.active::after {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <header>
+            <h1>Memory Hierarchy</h1>
+            <p class="subtitle">Click on any level to explore its characteristics</p>
+        </header>
+
+        <div class="main-content">
+            <div class="pyramid-container">
+                <div class="axis-labels axis-left">
+                    <div>
+                        <div class="axis-label">Faster</div>
+                        <div class="axis-arrow">⬆</div>
+                    </div>
+                    <div>
+                        <div class="axis-arrow">⬇</div>
+                        <div class="axis-label">Slower</div>
+                    </div>
+                </div>
+
+                <div class="pyramid">
+                    <div class="pyramid-level level-registers" data-level="registers">
+                        <span>CPU Registers</span>
+                    </div>
+                    <div class="pyramid-level level-l1" data-level="l1">
+                        <span>L1 Cache</span>
+                    </div>
+                    <div class="pyramid-level level-l2" data-level="l2">
+                        <span>L2 Cache</span>
+                    </div>
+                    <div class="pyramid-level level-l3" data-level="l3">
+                        <span>L3 Cache</span>
+                    </div>
+                    <div class="pyramid-level level-main" data-level="main">
+                        <span>Main Memory (RAM)</span>
+                    </div>
+                    <div class="pyramid-level level-ssd" data-level="ssd">
+                        <span>Solid State Drive (SSD)</span>
+                    </div>
+                    <div class="pyramid-level level-hdd" data-level="hdd">
+                        <span>Hard Disk Drive (HDD)</span>
+                    </div>
+                    <div class="pyramid-level level-cloud" data-level="cloud">
+                        <span>Cloud / Network Storage</span>
+                    </div>
+                </div>
+
+                <div class="axis-labels axis-right">
+                    <div>
+                        <div class="axis-label">Smaller</div>
+                        <div class="axis-arrow">⬆</div>
+                    </div>
+                    <div>
+                        <div class="axis-arrow">⬇</div>
+                        <div class="axis-label">Larger</div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: var(--accent-registers)"></div>
+                        <span>Volatile / On-Chip</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: var(--accent-main)"></div>
+                        <span>Volatile / Off-Chip</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background: var(--accent-hdd)"></div>
+                        <span>Non-Volatile Storage</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-panel" id="infoPanel">
+                <div class="default-message" id="defaultMessage">
+                    <div class="default-icon">🔍</div>
+                    <div class="default-text">Select a memory level to view detailed specifications and comparisons</div>
+                </div>
+                <div id="infoContent" style="display: none;">
+                    <div class="info-header">
+                        <div class="info-icon" id="infoIcon">💾</div>
+                        <div>
+                            <div class="info-title" id="infoTitle">Memory Type</div>
+                            <div class="info-category" id="infoCategory">Category</div>
+                        </div>
+                    </div>
+                    <div class="info-description" id="infoDescription">
+                        Description goes here.
+                    </div>
+                    <div class="specs-grid">
+                        <div class="spec-item">
+                            <div class="spec-label">Typical Size</div>
+                            <div class="spec-value" id="specSize">--</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Access Time</div>
+                            <div class="spec-value" id="specSpeed">--</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Cost per GB</div>
+                            <div class="spec-value" id="specCost">--</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Volatility</div>
+                            <div class="spec-value" id="specVolatile">--</div>
+                        </div>
+                    </div>
+                    <div class="comparison-section">
+                        <div class="comparison-title">Relative Performance</div>
+                        <div class="comparison-bar">
+                            <span class="comparison-label">Speed</span>
+                            <div class="comparison-track">
+                                <div class="comparison-fill" id="speedBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="comparison-bar">
+                            <span class="comparison-label">Capacity</span>
+                            <div class="comparison-track">
+                                <div class="comparison-fill" id="capacityBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="comparison-bar">
+                            <span class="comparison-label">Cost/GB</span>
+                            <div class="comparison-track">
+                                <div class="comparison-fill" id="costBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const memoryData = {
+            registers: {
+                title: "CPU Registers",
+                category: "On-Chip Storage",
+                icon: "⚡",
+                color: "#ff6b6b",
+                description: "The fastest memory in a computer, located directly inside the CPU. Registers hold data the processor is actively working with, such as operands for arithmetic operations, memory addresses, and control flags. Access is nearly instantaneous—within a single clock cycle.",
+                size: "~1 KB",
+                speed: "< 1 ns",
+                cost: "~$10M+",
+                volatile: "Volatile",
+                speedPercent: 100,
+                capacityPercent: 2,
+                costPercent: 100
+            },
+            l1: {
+                title: "L1 Cache",
+                category: "On-Chip SRAM",
+                icon: "🔥",
+                color: "#ffa94d",
+                description: "The smallest and fastest cache, split into instruction cache (L1i) and data cache (L1d). Located on each CPU core, it provides extremely low latency access to frequently used instructions and data. Modern CPUs typically have 32-64 KB per core.",
+                size: "32-64 KB",
+                speed: "~1 ns",
+                cost: "~$1M",
+                volatile: "Volatile",
+                speedPercent: 95,
+                capacityPercent: 5,
+                costPercent: 90
+            },
+            l2: {
+                title: "L2 Cache",
+                category: "On-Chip SRAM",
+                icon: "🔶",
+                color: "#ffd43b",
+                description: "Larger than L1 but slightly slower, L2 cache serves as a buffer between L1 and L3. Usually dedicated per core in modern processors, it catches misses from L1 cache. Typical sizes range from 256 KB to 1 MB per core.",
+                size: "256 KB - 1 MB",
+                speed: "~4 ns",
+                cost: "~$100K",
+                volatile: "Volatile",
+                speedPercent: 85,
+                capacityPercent: 10,
+                costPercent: 80
+            },
+            l3: {
+                title: "L3 Cache",
+                category: "On-Chip SRAM",
+                icon: "🟢",
+                color: "#a9e34b",
+                description: "Shared among all CPU cores, L3 cache is the largest on-chip cache. It reduces the need to access slower main memory and helps with inter-core data sharing. Modern desktop CPUs have 8-64 MB, while server CPUs can have over 100 MB.",
+                size: "8-64 MB",
+                speed: "~10 ns",
+                cost: "~$10K",
+                volatile: "Volatile",
+                speedPercent: 70,
+                capacityPercent: 18,
+                costPercent: 70
+            },
+            main: {
+                title: "Main Memory (RAM)",
+                category: "Off-Chip DRAM",
+                icon: "🧠",
+                color: "#69db7c",
+                description: "Dynamic RAM provides the working memory for running programs and storing active data. Unlike SRAM caches, DRAM requires periodic refresh cycles. DDR5 is the current standard, offering speeds up to 6400 MT/s. Typical desktop systems have 8-64 GB.",
+                size: "8-64 GB",
+                speed: "~100 ns",
+                cost: "~$3-5",
+                volatile: "Volatile",
+                speedPercent: 40,
+                capacityPercent: 35,
+                costPercent: 40
+            },
+            ssd: {
+                title: "Solid State Drive",
+                category: "Non-Volatile Flash",
+                icon: "💾",
+                color: "#38d9a9",
+                description: "SSDs use NAND flash memory with no moving parts. NVMe SSDs connect via PCIe for maximum throughput (up to 7 GB/s), while SATA SSDs are limited to ~550 MB/s. They provide persistent storage with much faster access than HDDs.",
+                size: "256 GB - 8 TB",
+                speed: "~100 µs",
+                cost: "$0.05-0.10",
+                volatile: "Non-Volatile",
+                speedPercent: 15,
+                capacityPercent: 60,
+                costPercent: 20
+            },
+            hdd: {
+                title: "Hard Disk Drive",
+                category: "Magnetic Storage",
+                icon: "📀",
+                color: "#4dabf7",
+                description: "HDDs use spinning magnetic platters and read/write heads. While much slower than SSDs due to mechanical seek times, they offer the lowest cost per gigabyte for bulk storage. Common in data centers and for archival purposes.",
+                size: "1-20 TB",
+                speed: "~10 ms",
+                cost: "$0.02-0.03",
+                volatile: "Non-Volatile",
+                speedPercent: 5,
+                capacityPercent: 80,
+                costPercent: 10
+            },
+            cloud: {
+                title: "Cloud / Network Storage",
+                category: "Remote Storage",
+                icon: "☁️",
+                color: "#748ffc",
+                description: "Network-attached or cloud storage provides virtually unlimited capacity but with the highest latency due to network round-trips. Latency depends on network conditions and physical distance to servers. Used for backups, distributed systems, and data sharing.",
+                size: "Unlimited",
+                speed: "10-100+ ms",
+                cost: "$0.01-0.02",
+                volatile: "Non-Volatile",
+                speedPercent: 2,
+                capacityPercent: 100,
+                costPercent: 5
+            }
+        };
+
+        const levels = document.querySelectorAll('.pyramid-level');
+        const infoPanel = document.getElementById('infoPanel');
+        const infoContent = document.getElementById('infoContent');
+        const defaultMessage = document.getElementById('defaultMessage');
+
+        function updateInfoPanel(levelKey) {
+            const data = memoryData[levelKey];
+            
+            // Update panel styling
+            infoPanel.classList.add('has-selection');
+            infoPanel.style.setProperty('--current-color', data.color);
+            
+            // Show content, hide default
+            defaultMessage.style.display = 'none';
+            infoContent.style.display = 'block';
+            
+            // Update content
+            document.getElementById('infoIcon').textContent = data.icon;
+            document.getElementById('infoIcon').style.background = data.color;
+            document.getElementById('infoTitle').textContent = data.title;
+            document.getElementById('infoTitle').style.color = data.color;
+            document.getElementById('infoCategory').textContent = data.category;
+            document.getElementById('infoDescription').textContent = data.description;
+            
+            document.getElementById('specSize').textContent = data.size;
+            document.getElementById('specSpeed').textContent = data.speed;
+            document.getElementById('specCost').textContent = data.cost;
+            document.getElementById('specVolatile').textContent = data.volatile;
+            
+            // Update comparison bars
+            const speedBar = document.getElementById('speedBar');
+            const capacityBar = document.getElementById('capacityBar');
+            const costBar = document.getElementById('costBar');
+            
+            speedBar.style.width = '0%';
+            capacityBar.style.width = '0%';
+            costBar.style.width = '0%';
+            speedBar.style.background = data.color;
+            capacityBar.style.background = data.color;
+            costBar.style.background = data.color;
+            
+            // Animate bars
+            setTimeout(() => {
+                speedBar.style.width = data.speedPercent + '%';
+                capacityBar.style.width = data.capacityPercent + '%';
+                costBar.style.width = data.costPercent + '%';
+            }, 50);
+        }
+
+        levels.forEach(level => {
+            level.addEventListener('click', () => {
+                // Update active state
+                levels.forEach(l => l.classList.remove('active'));
+                level.classList.add('active');
+                
+                // Update info panel
+                const levelKey = level.dataset.level;
+                updateInfoPanel(levelKey);
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const currentActive = document.querySelector('.pyramid-level.active');
+            const levelArray = Array.from(levels);
+            let currentIndex = currentActive ? levelArray.indexOf(currentActive) : -1;
+            
+            if (e.key === 'ArrowUp' && currentIndex > 0) {
+                levelArray[currentIndex - 1].click();
+            } else if (e.key === 'ArrowDown' && currentIndex < levelArray.length - 1) {
+                levelArray[currentIndex + 1].click();
+            } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && currentIndex === -1) {
+                levelArray[0].click();
+            }
+        });
+    </script>
+</body>
+</html>
