@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Address Lines Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e14;
+            --bg-card: #131920;
+            --bg-input: #1a2129;
+            --accent-blue: #00d4ff;
+            --accent-green: #00ff9d;
+            --accent-orange: #ff9f43;
+            --accent-purple: #a78bfa;
+            --text-primary: #e8edf3;
+            --text-secondary: #7a8899;
+            --border-color: #2a3544;
+            --glow-blue: rgba(0, 212, 255, 0.3);
+            --glow-green: rgba(0, 255, 157, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 255, 157, 0.06) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .calculator-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: stretch;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--glow-blue);
+        }
+
+        input[type="number"] {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.875rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            outline: none;
+            min-width: 0;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--glow-blue);
+        }
+
+        .unit-selector {
+            display: flex;
+            background: var(--bg-dark);
+            border-left: 1px solid var(--border-color);
+        }
+
+        .unit-btn {
+            padding: 0.5rem 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .unit-btn.active {
+            background: var(--accent-blue);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        .unit-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.875rem 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: var(--accent-blue);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+
+        .mode-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.05);
+        }
+
+        #wordSizeGroup {
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #wordSizeGroup.hidden {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .results-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .result-box {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .result-box.highlight {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px var(--glow-green);
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .result-box.highlight .result-value {
+            color: var(--accent-green);
+        }
+
+        .result-detail {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .formula-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .formula-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .formula-box {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 2;
+        }
+
+        .formula-line {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .formula-line .highlight-blue {
+            color: var(--accent-blue);
+        }
+
+        .formula-line .highlight-green {
+            color: var(--accent-green);
+        }
+
+        .formula-line .highlight-orange {
+            color: var(--accent-orange);
+        }
+
+        .info-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 212, 255, 0.08);
+            border-left: 3px solid var(--accent-blue);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .info-icon {
+            color: var(--accent-blue);
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .calculator-card, .formula-section {
+                padding: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Memory Address Lines Calculator</h1>
+            <p class="subtitle">Interactive tool for understanding memory addressing</p>
+        </header>
+
+        <div class="calculator-card">
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Memory Size</label>
+                    <div class="input-wrapper">
+                        <input type="number" id="memorySize" value="4" min="1" step="1">
+                        <div class="unit-selector" id="sizeUnits">
+                            <button class="unit-btn" data-unit="B">B</button>
+                            <button class="unit-btn" data-unit="KB">KB</button>
+                            <button class="unit-btn active" data-unit="MB">MB</button>
+                            <button class="unit-btn" data-unit="GB">GB</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Addressing Mode</label>
+                    <div class="mode-toggle" id="addressingMode">
+                        <button class="mode-btn active" data-mode="byte">Byte-Addressable</button>
+                        <button class="mode-btn" data-mode="word">Word-Addressable</button>
+                    </div>
+                </div>
+
+                <div class="input-group" id="wordSizeGroup">
+                    <label>Word Size</label>
+                    <select id="wordSize">
+                        <option value="8">8 bits (1 byte)</option>
+                        <option value="16" selected>16 bits (2 bytes)</option>
+                        <option value="32">32 bits (4 bytes)</option>
+                        <option value="64">64 bits (8 bytes)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="result-box">
+                    <div class="result-label">Total Bytes</div>
+                    <div class="result-value" id="totalBytes">4M</div>
+                    <div class="result-detail" id="totalBytesDetail">4,194,304</div>
+                </div>
+                <div class="result-box" id="wordInfoBox">
+                    <div class="result-label">Bytes per Word</div>
+                    <div class="result-value" id="bytesPerWord">2</div>
+                    <div class="result-detail" id="bytesPerWordDetail">16 bits</div>
+                </div>
+                <div class="result-box">
+                    <div class="result-label" id="locationsLabel">Memory Locations</div>
+                    <div class="result-value" id="locations">2M</div>
+                    <div class="result-detail" id="locationsDetail">2,097,152</div>
+                </div>
+                <div class="result-box highlight">
+                    <div class="result-label">Address Lines</div>
+                    <div class="result-value" id="addressLines">21</div>
+                    <div class="result-detail" id="addressLinesDetail">2²¹ locations</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="formula-section">
+            <div class="formula-title">Calculation Breakdown</div>
+            <div class="formula-box" id="formulaBox">
+                <!-- Filled by JS -->
+            </div>
+            <div class="info-note">
+                <span class="info-icon">💡</span>
+                <span>The number of address lines determines how many unique memory locations can be addressed. With <strong>n</strong> address lines, you can address 2ⁿ locations. We use the ceiling of log₂ to ensure we have enough lines to address all locations.</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let state = {
+            memorySize: 4,
+            sizeUnit: 'MB',
+            wordBits: 16,
+            addressingMode: 'byte'
+        };
+
+        // Unit multipliers (to bytes)
+        const unitMultipliers = {
+            'B': 1,
+            'KB': 1024,
+            'MB': 1024 * 1024,
+            'GB': 1024 * 1024 * 1024
+        };
+
+        // DOM elements
+        const memorySizeInput = document.getElementById('memorySize');
+        const wordSizeSelect = document.getElementById('wordSize');
+        const sizeUnitsContainer = document.getElementById('sizeUnits');
+        const addressingModeContainer = document.getElementById('addressingMode');
+        const wordSizeGroup = document.getElementById('wordSizeGroup');
+        const wordInfoBox = document.getElementById('wordInfoBox');
+
+        // Format large numbers
+        function formatNumber(n) {
+            if (n >= 1024 * 1024 * 1024) {
+                return (n / (1024 * 1024 * 1024)).toFixed(n % (1024 * 1024 * 1024) === 0 ? 0 : 2) + 'G';
+            } else if (n >= 1024 * 1024) {
+                return (n / (1024 * 1024)).toFixed(n % (1024 * 1024) === 0 ? 0 : 2) + 'M';
+            } else if (n >= 1024) {
+                return (n / 1024).toFixed(n % 1024 === 0 ? 0 : 2) + 'K';
+            }
+            return n.toString();
+        }
+
+        // Format with commas
+        function numberWithCommas(x) {
+            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // Calculate and update display
+        function calculate() {
+            const totalBytes = state.memorySize * unitMultipliers[state.sizeUnit];
+            const bytesPerWord = state.wordBits / 8;
+            
+            let locations, addressLines;
+            
+            if (state.addressingMode === 'byte') {
+                locations = totalBytes;
+                wordSizeGroup.classList.add('hidden');
+                wordInfoBox.style.display = 'none';
+                document.getElementById('locationsLabel').textContent = 'Byte Locations';
+            } else {
+                locations = Math.floor(totalBytes / bytesPerWord);
+                wordSizeGroup.classList.remove('hidden');
+                wordInfoBox.style.display = '';
+                document.getElementById('locationsLabel').textContent = 'Word Locations';
+            }
+            
+            addressLines = locations > 0 ? Math.ceil(Math.log2(locations)) : 0;
+
+            // Update result displays
+            document.getElementById('totalBytes').textContent = formatNumber(totalBytes);
+            document.getElementById('totalBytesDetail').textContent = numberWithCommas(totalBytes);
+            
+            document.getElementById('bytesPerWord').textContent = bytesPerWord;
+            document.getElementById('bytesPerWordDetail').textContent = state.wordBits + ' bits';
+            
+            document.getElementById('locations').textContent = formatNumber(locations);
+            document.getElementById('locationsDetail').textContent = numberWithCommas(locations);
+            
+            document.getElementById('addressLines').textContent = addressLines;
+            document.getElementById('addressLinesDetail').textContent = `2${toSuperscript(addressLines)} locations`;
+
+            // Update formula
+            updateFormula(totalBytes, bytesPerWord, locations, addressLines);
+        }
+
+        // Convert number to superscript
+        function toSuperscript(n) {
+            const superscripts = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+            return n.toString().split('').map(d => superscripts[parseInt(d)]).join('');
+        }
+
+        // Update formula display
+        function updateFormula(totalBytes, bytesPerWord, locations, addressLines) {
+            const formulaBox = document.getElementById('formulaBox');
+            
+            if (state.addressingMode === 'byte') {
+                formulaBox.innerHTML = `
+                    <div class="formula-line">
+                        <span class="highlight-blue">Memory Size</span> = ${state.memorySize} ${state.sizeUnit} = <span class="highlight-blue">${numberWithCommas(totalBytes)} bytes</span>
+                    </div>
+                    <div class="formula-line">
+                        Byte Locations = Total Bytes = <span class="highlight-blue">${numberWithCommas(locations)}</span>
+                    </div>
+                    <div class="formula-line">
+                        Address Lines = ⌈log₂(${numberWithCommas(locations)})⌉ = ⌈${(Math.log2(locations)).toFixed(4)}⌉ = <span class="highlight-green">${addressLines}</span>
+                    </div>
+                    <div class="formula-line">
+                        Verification: 2${toSuperscript(addressLines)} = ${numberWithCommas(Math.pow(2, addressLines))} ≥ ${numberWithCommas(locations)} ✓
+                    </div>
+                `;
+            } else {
+                formulaBox.innerHTML = `
+                    <div class="formula-line">
+                        <span class="highlight-blue">Memory Size</span> = ${state.memorySize} ${state.sizeUnit} = <span class="highlight-blue">${numberWithCommas(totalBytes)} bytes</span>
+                    </div>
+                    <div class="formula-line">
+                        <span class="highlight-orange">Word Size</span> = ${state.wordBits} bits = <span class="highlight-orange">${bytesPerWord} bytes/word</span>
+                    </div>
+                    <div class="formula-line">
+                        Word Locations = Memory Size ÷ Bytes per Word
+                    </div>
+                    <div class="formula-line">
+                        Word Locations = ${numberWithCommas(totalBytes)} ÷ ${bytesPerWord} = <span class="highlight-blue">${numberWithCommas(locations)}</span>
+                    </div>
+                    <div class="formula-line">
+                        Address Lines = ⌈log₂(${numberWithCommas(locations)})⌉ = ⌈${(Math.log2(locations)).toFixed(4)}⌉ = <span class="highlight-green">${addressLines}</span>
+                    </div>
+                    <div class="formula-line">
+                        Verification: 2${toSuperscript(addressLines)} = ${numberWithCommas(Math.pow(2, addressLines))} ≥ ${numberWithCommas(locations)} ✓
+                    </div>
+                `;
+            }
+        }
+
+        // Event listeners
+        memorySizeInput.addEventListener('input', (e) => {
+            state.memorySize = parseFloat(e.target.value) || 1;
+            calculate();
+        });
+
+        wordSizeSelect.addEventListener('change', (e) => {
+            state.wordBits = parseInt(e.target.value);
+            calculate();
+        });
+
+        sizeUnitsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('unit-btn')) {
+                sizeUnitsContainer.querySelectorAll('.unit-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                state.sizeUnit = e.target.dataset.unit;
+                calculate();
+            }
+        });
+
+        addressingModeContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('mode-btn')) {
+                addressingModeContainer.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                state.addressingMode = e.target.dataset.mode;
+                calculate();
+            }
+        });
+
+        // Initialize
+        calculate();
+    </script>
+</body>
+</html>
