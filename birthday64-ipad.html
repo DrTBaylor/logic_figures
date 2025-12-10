@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Happy 64th Birthday! 💕</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --groovy-orange: #FF6B35;
+            --sunshine-yellow: #F7C531;
+            --retro-teal: #00A896;
+            --psychedelic-pink: #FF4081;
+            --cream: #FFF8E7;
+            --dark-brown: #3D2914;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background: var(--cream);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Groovy animated background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+            background:
+                radial-gradient(circle at 20% 80%, var(--groovy-orange) 0%, transparent 25%),
+                radial-gradient(circle at 80% 20%, var(--psychedelic-pink) 0%, transparent 25%),
+                radial-gradient(circle at 50% 50%, var(--retro-teal) 0%, transparent 30%);
+            animation: psychedelicPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes psychedelicPulse {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.15;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.2;
+            }
+        }
+
+        /* Flower decorations - larger for iPad */
+        .flower {
+            position: fixed;
+            font-size: 4rem;
+            opacity: 0.6;
+            animation: float 6s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        .flower:nth-child(1) { top: 8%; left: 5%; animation-delay: 0s; }
+        .flower:nth-child(2) { top: 15%; right: 8%; animation-delay: 1s; }
+        .flower:nth-child(3) { bottom: 12%; left: 8%; animation-delay: 2s; }
+        .flower:nth-child(4) { bottom: 20%; right: 5%; animation-delay: 3s; }
+        .flower:nth-child(5) { top: 45%; left: 3%; animation-delay: 1.5s; }
+        .flower:nth-child(6) { top: 55%; right: 3%; animation-delay: 2.5s; }
+
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-15px) rotate(10deg);
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2.5rem 3rem;
+        }
+
+        /* Header with 60s vibe */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .age-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--groovy-orange), var(--psychedelic-pink));
+            color: white;
+            font-family: 'Pacifico', cursive;
+            font-size: 6rem;
+            width: 180px;
+            height: 180px;
+            line-height: 180px;
+            border-radius: 50%;
+            margin-bottom: 1.5rem;
+            box-shadow:
+                0 8px 30px rgba(255, 107, 53, 0.4),
+                inset 0 -5px 20px rgba(0, 0, 0, 0.1);
+            animation: groovyPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes groovyPulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        h1 {
+            font-family: 'Pacifico', cursive;
+            font-size: 3rem;
+            color: var(--dark-brown);
+            margin-bottom: 0.75rem;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: var(--retro-teal);
+            font-style: italic;
+        }
+
+        /* Vinyl record divider */
+        .vinyl-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 2.5rem 0;
+        }
+
+        .vinyl {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 50%, #1a1a1a 100%);
+            border-radius: 50%;
+            position: relative;
+            animation: spin 4s linear infinite;
+        }
+
+        .vinyl::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            background: var(--groovy-orange);
+            border-radius: 50%;
+        }
+
+        .vinyl::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: var(--cream);
+            border-radius: 50%;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--retro-teal), transparent);
+        }
+
+        /* Checklist Card */
+        .checklist-card {
+            background: white;
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.1),
+                0 0 0 4px var(--sunshine-yellow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .checklist-card::before {
+            content: '♪ ♫ ♪';
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            font-size: 1.8rem;
+            opacity: 0.3;
+            animation: musicNotes 2s ease-in-out infinite;
+        }
+
+        @keyframes musicNotes {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .checklist-title {
+            font-family: 'Pacifico', cursive;
+            font-size: 2.2rem;
+            color: var(--groovy-orange);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .checklist-intro {
+            text-align: center;
+            color: var(--dark-brown);
+            margin-bottom: 2rem;
+            font-style: italic;
+            font-size: 1.2rem;
+        }
+
+        /* Checkbox items - iPad optimized with larger touch targets */
+        .check-item {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff9f0 0%, #fff 100%);
+            border-radius: 16px;
+            border-left: 5px solid var(--retro-teal);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            min-height: 70px;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .check-item:hover,
+        .check-item:active {
+            transform: translateX(8px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .check-item:active {
+            transform: translateX(8px) scale(0.98);
+        }
+
+        .check-item.checked {
+            border-left-color: var(--psychedelic-pink);
+            background: linear-gradient(135deg, #fff0f5 0%, #fff 100%);
+        }
+
+        .check-item.future-item {
+            border-left-color: var(--sunshine-yellow);
+            opacity: 0.7;
+        }
+
+        .checkbox {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--retro-teal);
+            border-radius: 50%;
+            margin-right: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .check-item.checked .checkbox {
+            background: var(--psychedelic-pink);
+            border-color: var(--psychedelic-pink);
+        }
+
+        .checkbox::after {
+            content: '♥';
+            color: white;
+            font-size: 1.25rem;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .check-item.checked .checkbox::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .check-label {
+            font-size: 1.3rem;
+            color: var(--dark-brown);
+            flex: 1;
+        }
+
+        .check-item.future-item .check-label {
+            font-style: italic;
+        }
+
+        .future-tag {
+            font-size: 0.9rem;
+            background: var(--sunshine-yellow);
+            color: var(--dark-brown);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            margin-left: 0.75rem;
+            white-space: nowrap;
+        }
+
+        /* Progress indicator */
+        .progress-section {
+            margin-top: 2.5rem;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 16px;
+            background: #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1.25rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--retro-teal), var(--psychedelic-pink));
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-family: 'Pacifico', cursive;
+            color: var(--groovy-orange);
+            font-size: 1.4rem;
+        }
+
+        .reset-btn {
+            margin-top: 1.25rem;
+            background: transparent;
+            border: 2px solid var(--retro-teal);
+            color: var(--retro-teal);
+            padding: 0.75rem 2rem;
+            font-family: 'Lato', sans-serif;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 50px;
+        }
+
+        .reset-btn:hover,
+        .reset-btn:active {
+            background: var(--retro-teal);
+            color: white;
+        }
+
+        /* Celebration overlay */
+        .celebration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.5s ease-out;
+            padding: 2rem;
+        }
+
+        .celebration-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .celebration-content {
+            text-align: center;
+            color: white;
+            padding: 3rem;
+            animation: zoomIn 0.8s ease-out;
+            max-width: 600px;
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .celebration-hearts {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            animation: heartBeat 1s ease-in-out infinite;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.1); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.15); }
+        }
+
+        .celebration-title {
+            font-family: 'Pacifico', cursive;
+            font-size: 4.5rem;
+            background: linear-gradient(135deg, var(--sunshine-yellow), var(--psychedelic-pink), var(--groovy-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.25rem;
+            text-shadow: none;
+        }
+
+        .celebration-subtitle {
+            font-size: 1.8rem;
+            color: var(--cream);
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+
+        .celebration-message {
+            font-size: 1.4rem;
+            color: var(--sunshine-yellow);
+            max-width: 500px;
+            line-height: 1.9;
+            margin: 0 auto;
+        }
+
+        .close-celebration {
+            margin-top: 2.5rem;
+            background: linear-gradient(135deg, var(--psychedelic-pink), var(--groovy-orange));
+            border: none;
+            color: white;
+            padding: 1.25rem 2.5rem;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.4rem;
+            border-radius: 35px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            min-height: 60px;
+        }
+
+        .close-celebration:hover,
+        .close-celebration:active {
+            transform: scale(1.1);
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            top: -12px;
+            animation: confettiFall 4s linear forwards;
+            z-index: 1001;
+        }
+
+        @keyframes confettiFall {
+            to {
+                top: 100vh;
+                transform: rotate(720deg);
+            }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 2.5rem;
+            color: var(--dark-brown);
+            opacity: 0.7;
+            font-style: italic;
+            font-size: 1.2rem;
+            padding-bottom: 2rem;
+        }
+
+        .footer .heart {
+            color: var(--psychedelic-pink);
+            animation: heartBeat 1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        /* iPad Landscape adjustments */
+        @media (min-width: 1024px) and (orientation: landscape) {
+            .container {
+                max-width: 900px;
+                padding: 2rem 4rem;
+            }
+            
+            .checklist-card {
+                padding: 3rem;
+            }
+            
+            .check-item {
+                padding: 1.5rem 2rem;
+            }
+        }
+
+        /* iPad Mini and smaller tablets */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem 2rem;
+            }
+            
+            .age-badge {
+                font-size: 5rem;
+                width: 150px;
+                height: 150px;
+                line-height: 150px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1.3rem;
+            }
+            
+            .checklist-title {
+                font-size: 1.9rem;
+            }
+            
+            .check-label {
+                font-size: 1.15rem;
+            }
+            
+            .celebration-title {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background elements -->
+    <div class="bg-pattern"></div>
+    <div class="flower">🌸</div>
+    <div class="flower">🌼</div>
+    <div class="flower">🌺</div>
+    <div class="flower">✿</div>
+    <div class="flower">🌷</div>
+    <div class="flower">💮</div>
+
+    <div class="container">
+        <header class="header">
+            <div class="age-badge">64</div>
+            <h1>Happy Birthday, My Love!</h1>
+            <p class="subtitle">Will you still need me? Will you still feed me?</p>
+        </header>
+
+        <div class="vinyl-divider">
+            <div class="divider-line"></div>
+            <div class="vinyl"></div>
+            <div class="divider-line"></div>
+        </div>
+
+        <div class="checklist-card">
+            <h2 class="checklist-title">Our Life Together ♪</h2>
+            <p class="checklist-intro">Check all the promises we've kept...</p>
+
+            <div class="check-item" data-item="1">
+                <div class="checkbox"></div>
+                <span class="check-label">Will you still need me?</span>
+            </div>
+
+            <div class="check-item" data-item="2">
+                <div class="checkbox"></div>
+                <span class="check-label">Will you still feed me?</span>
+            </div>
+
+            <div class="check-item" data-item="3">
+                <div class="checkbox"></div>
+                <span class="check-label">Sending valentines</span>
+            </div>
+
+            <div class="check-item" data-item="3b">
+                <div class="checkbox"></div>
+                <span class="check-label">Birthday greetings, bottle of wine</span>
+            </div>
+
+            <div class="check-item" data-item="4">
+                <div class="checkbox"></div>
+                <span class="check-label">Mending fuses</span>
+            </div>
+
+            <div class="check-item" data-item="5">
+                <div class="checkbox"></div>
+                <span class="check-label">Doing the garden</span>
+            </div>
+
+            <div class="check-item" data-item="6">
+                <div class="checkbox"></div>
+                <span class="check-label">Digging the weeds</span>
+            </div>
+
+            <div class="check-item" data-item="7">
+                <div class="checkbox"></div>
+                <span class="check-label">Sunday morning drives, go for a ride</span>
+            </div>
+
+            <div class="check-item" data-item="8">
+                <div class="checkbox"></div>
+                <span class="check-label">Scrimp and save</span>
+            </div>
+
+            <div class="check-item" data-item="9">
+                <div class="checkbox"></div>
+                <span class="check-label">Send me a postcard</span>
+            </div>
+
+            <div class="check-item future-item" data-item="10" data-future="true">
+                <div class="checkbox"></div>
+                <span class="check-label">Grandchildren on your knee</span>
+                <span class="future-tag">🌟 Maybe! Someday?!?</span>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p class="progress-text" id="progressText">Check our memories together...</p>
+                <button class="reset-btn" onclick="resetChecklist()">Start Over ↺</button>
+            </div>
+        </div>
+
+        <p class="footer">Made with <span class="heart">♥</span> for your 64th birthday</p>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div class="celebration-overlay" id="celebration">
+        <div class="celebration-content">
+            <div class="celebration-hearts">💕 💖 💕</div>
+            <h2 class="celebration-title">Mine Forevermore</h2>
+            <p class="celebration-subtitle">And I will still love you...</p>
+            <p class="celebration-message">
+                Through every year, every moment, every adventure —<br>
+                from the first day I saw you to this beautiful 64th birthday,<br>
+                you've been my everything.<br><br>
+                Here's to all the years behind us,<br>
+                and all the wonderful years still ahead.<br><br>
+                <strong>Happy Birthday, my love! ♥</strong>
+            </p>
+            <button class="close-celebration" onclick="closeCelebration()">
+                Back to Our Memories
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const items = document.querySelectorAll('.check-item:not(.future-item)');
+        const futureItem = document.querySelector('.future-item');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const celebration = document.getElementById('celebration');
+
+        const totalRequired = items.length;
+        let checkedCount = 0;
+
+        // Load saved state
+        function loadState() {
+            const saved = localStorage.getItem('birthday64_checked');
+            if (saved) {
+                const checked = JSON.parse(saved);
+                items.forEach(item => {
+                    if (checked.includes(item.dataset.item)) {
+                        item.classList.add('checked');
+                        checkedCount++;
+                    }
+                });
+                updateProgress();
+            }
+        }
+
+        // Save state
+        function saveState() {
+            const checked = [];
+            items.forEach(item => {
+                if (item.classList.contains('checked')) {
+                    checked.push(item.dataset.item);
+                }
+            });
+            localStorage.setItem('birthday64_checked', JSON.stringify(checked));
+        }
+
+        // Update progress
+        function updateProgress() {
+            const percentage = (checkedCount / totalRequired) * 100;
+            progressFill.style.width = percentage + '%';
+
+            if (checkedCount === 0) {
+                progressText.textContent = "Check our memories together...";
+            } else if (checkedCount < totalRequired) {
+                progressText.textContent = `${checkedCount} of ${totalRequired} memories confirmed! 💕`;
+            } else {
+                progressText.textContent = "All memories confirmed! ✨";
+                setTimeout(showCelebration, 500);
+            }
+        }
+
+        // Handle item click/touch
+        items.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                item.classList.toggle('checked');
+
+                if (item.classList.contains('checked')) {
+                    checkedCount++;
+                    createHeartBurst(item);
+                } else {
+                    checkedCount--;
+                }
+
+                updateProgress();
+                saveState();
+            });
+        });
+
+        // Future item click (just shows a message)
+        futureItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            futureItem.style.animation = 'none';
+            futureItem.offsetHeight; // Trigger reflow
+            futureItem.style.animation = 'shake 0.5s ease';
+        });
+
+        // Heart burst effect
+        function createHeartBurst(element) {
+            const rect = element.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+                const heart = document.createElement('div');
+                heart.textContent = '♥';
+                heart.style.cssText = `
+                    position: fixed;
+                    left: ${rect.left + rect.width / 2}px;
+                    top: ${rect.top + rect.height / 2}px;
+                    font-size: 1.8rem;
+                    color: #FF4081;
+                    pointer-events: none;
+                    z-index: 100;
+                    animation: heartFloat 1s ease-out forwards;
+                `;
+                heart.style.setProperty('--tx', `${(Math.random() - 0.5) * 120}px`);
+                heart.style.setProperty('--ty', `${-60 - Math.random() * 60}px`);
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), 1000);
+            }
+        }
+
+        // Add heart float animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes heartFloat {
+                to {
+                    transform: translate(var(--tx), var(--ty));
+                    opacity: 0;
+                }
+            }
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Show celebration
+        function showCelebration() {
+            celebration.classList.add('active');
+            createConfetti();
+        }
+
+        // Close celebration
+        function closeCelebration() {
+            celebration.classList.remove('active');
+        }
+
+        // Reset checklist
+        function resetChecklist() {
+            items.forEach(item => {
+                item.classList.remove('checked');
+            });
+            checkedCount = 0;
+            localStorage.removeItem('birthday64_checked');
+            updateProgress();
+        }
+
+        // Confetti
+        function createConfetti() {
+            const colors = ['#FF6B35', '#F7C531', '#00A896', '#FF4081', '#fff'];
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (3 + Math.random() * 2) + 's';
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 5000);
+                }, i * 30);
+            }
+        }
+
+        // Initialize
+        loadState();
+    </script>
+</body>
+
+</html>
