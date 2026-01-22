@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verilog Vectors: Concatenation & Indexing</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: #e0e0e0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            margin: 0 0 5px 0;
+            font-size: 1.4em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        /* Controls */
+        .controls-top {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: #0d1b2a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #546e7a;
+        }
+
+        .mode-btn {
+            background: #1a237e;
+            border: 1px solid #5c6bc0;
+            color: #c5cae9;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9em;
+        }
+
+        .mode-btn:hover {
+            border-color: #4fc3f7;
+            color: #fff;
+        }
+
+        .mode-btn.active {
+            background: #4fc3f7;
+            color: #0d1b2a;
+            font-weight: bold;
+            border-color: #4fc3f7;
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.4);
+        }
+
+        /* Main Diagram Area */
+        .diagram-section {
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 10px;
+            border: 2px solid #7e57c2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Interactive Elements */
+        .bit-toggle {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bit-toggle rect {
+            fill: #0a1628;
+            stroke: #546e7a;
+            stroke-width: 2;
+        }
+
+        .bit-toggle text {
+            fill: #fff;
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .bit-toggle:hover rect {
+            stroke: #ffeb3b;
+        }
+
+        .bit-toggle.active rect {
+            fill: #1b5e20;
+            stroke: #4caf50;
+        }
+
+        .bit-toggle.dimmed {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Wires */
+        .wire {
+            fill: none;
+            stroke: #37474f;
+            stroke-width: 3;
+            stroke-linecap: round;
+            transition: stroke 0.2s, opacity 0.2s;
+        }
+
+        .wire.bus {
+            stroke-width: 8;
+        }
+
+        .wire.active {
+            stroke: #4caf50;
+            filter: drop-shadow(0 0 4px rgba(76, 175, 80, 0.5));
+        }
+
+        .wire.dimmed {
+            opacity: 0.3;
+        }
+
+        /* Bus Value Display */
+        .bus-label {
+            fill: #fff;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            text-anchor: middle;
+            background: #000;
+        }
+
+        .code-text {
+            fill: #90a4ae;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .code-highlight {
+            fill: #4fc3f7;
+            font-weight: bold;
+        }
+
+        /* Emphasized Syntax Code */
+        .assign-text {
+            font-size: 24px;
+            /* Larger font for Emphasis */
+            font-weight: bold;
+            fill: #e0e0e0;
+        }
+
+        .output-code-text {
+            font-size: 18px;
+            font-weight: bold;
+            fill: #9fa8da;
+        }
+
+        /* Bus Tap Markers */
+        .tap-dot {
+            fill: #37474f;
+        }
+
+        /* Indicators */
+        .led-circle {
+            fill: #0a1628;
+            stroke: #546e7a;
+            stroke-width: 2;
+            transition: all 0.2s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Verilog Vectors</h1>
+        <p class="subtitle">Concatenation <code>{}</code>, Replication <code>{N{}}</code>, and Part Select
+            <code>[:]</code></p>
+
+        <div class="controls-top">
+            <button id="btn_concat" class="mode-btn active" onclick="setMode('concat')">Normal {a,b,c,d}</button>
+            <button id="btn_reverse" class="mode-btn" onclick="setMode('reverse')">Reverse {d,c,b,a}</button>
+            <button id="btn_replicate" class="mode-btn" onclick="setMode('replicate')">Replicate {4{a}}</button>
+            <button id="btn_split" class="mode-btn" onclick="setMode('split')">Split [Hi:Lo]</button>
+        </div>
+
+        <div class="diagram-section">
+            <svg viewBox="0 0 850 450" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#37474f" />
+                    </marker>
+                </defs>
+
+                <!-- === FAN IN SECTION (Left) === -->
+
+                <!-- Inputs toggles -->
+                <g class="bit-toggle" id="toggle_d" onclick="toggleBit(3)" transform="translate(50, 80)">
+                    <rect width="40" height="40" rx="6" />
+                    <text x="20" y="25" text-anchor="middle">d</text>
+                </g>
+                <g class="bit-toggle" id="toggle_c" onclick="toggleBit(2)" transform="translate(50, 150)">
+                    <rect width="40" height="40" rx="6" />
+                    <text x="20" y="25" text-anchor="middle">c</text>
+                </g>
+                <g class="bit-toggle" id="toggle_b" onclick="toggleBit(1)" transform="translate(50, 220)">
+                    <rect width="40" height="40" rx="6" />
+                    <text x="20" y="25" text-anchor="middle">b</text>
+                </g>
+                <g class="bit-toggle" id="toggle_a" onclick="toggleBit(0)" transform="translate(50, 290)">
+                    <rect width="40" height="40" rx="6" />
+                    <text x="20" y="25" text-anchor="middle">a</text>
+                </g>
+
+                <!-- Input Wires merging to Bus -->
+                <path d="M 90,100 L 200,100 L 250,200" class="wire" id="w_in_3" />
+                <path d="M 90,170 L 180,170 L 250,200" class="wire" id="w_in_2" />
+                <path d="M 90,240 L 180,240 L 250,200" class="wire" id="w_in_1" />
+                <path d="M 90,310 L 200,310 L 250,200" class="wire" id="w_in_0" />
+
+                <!-- Concatenation Code Display (Emphasized & Shifted Right to x=220) -->
+                <text x="220" y="380" class="code-text assign-text" text-anchor="middle" id="txt_assign_code">
+                    assign bus = {a, b, c, d};
+                </text>
+
+
+                <!-- === BUS SECTION (Center) === -->
+
+                <!-- The Bus -->
+                <line x1="250" y1="200" x2="550" y2="200" class="wire bus" id="bus_main" />
+
+                <!-- Bus Slash -->
+                <line x1="390" y1="185" x2="410" y2="215" stroke="#90a4ae" stroke-width="2" />
+                <text x="400" y="180" class="code-text" text-anchor="middle" font-weight="bold">4</text>
+
+                <!-- Bus Value Label -->
+                <rect x="350" y="220" width="100" height="30" rx="4" fill="#0d1b2a" stroke="#4fc3f7" />
+                <text x="400" y="240" class="bus-label" id="bus_label" fill="#4fc3f7">4'b0000</text>
+
+                <text x="400" y="150" class="code-text" text-anchor="middle" font-size="16">wire [3:0] bus;</text>
+
+
+                <!-- === FAN OUT SECTION (Right) === -->
+
+                <!-- Output Wires splitting from Bus -->
+                <path d="M 550,200 L 600,100 L 700,100" class="wire" id="w_out_3" />
+                <path d="M 550,200 L 620,170 L 700,170" class="wire" id="w_out_2" />
+                <path d="M 550,200 L 620,240 L 700,240" class="wire" id="w_out_1" />
+                <path d="M 550,200 L 600,310 L 700,310" class="wire" id="w_out_0" />
+
+                <!-- Bus Taps -->
+                <circle cx="550" cy="200" r="6" fill="#37474f" />
+
+                <!-- Indexing Annotations -->
+                <text x="630" y="90" class="code-text" id="lbl_out_3">bus[3]</text>
+                <text x="630" y="160" class="code-text" id="lbl_out_2">bus[2]</text>
+                <text x="630" y="230" class="code-text" id="lbl_out_1">bus[1]</text>
+                <text x="630" y="300" class="code-text" id="lbl_out_0">bus[0]</text>
+
+                <!-- Output Assignment Code (Shifted to x=630, y=380) -->
+                <text x="630" y="380" class="code-text output-code-text" text-anchor="middle" id="txt_assign_out">
+                    assign out = bus;
+                </text>
+
+                <!-- Output Indicators -->
+                <g transform="translate(710, 80)">
+                    <circle cx="20" cy="20" r="15" class="led-circle" id="led_3" />
+                    <text x="50" y="25" class="code-text" id="txt_out_3">out[3]</text>
+                </g>
+                <g transform="translate(710, 150)">
+                    <circle cx="20" cy="20" r="15" class="led-circle" id="led_2" />
+                    <text x="50" y="25" class="code-text" id="txt_out_2">out[2]</text>
+                </g>
+                <g transform="translate(710, 220)">
+                    <circle cx="20" cy="20" r="15" class="led-circle" id="led_1" />
+                    <text x="50" y="25" class="code-text" id="txt_out_1">out[1]</text>
+                </g>
+                <g transform="translate(710, 290)">
+                    <circle cx="20" cy="20" r="15" class="led-circle" id="led_0" />
+                    <text x="50" y="25" class="code-text" id="txt_out_0">out[0]</text>
+                </g>
+
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let vector = [0, 0, 0, 0]; // [LSB...MSB] -> index 0 is 'a', 3 is 'd'
+        const names = ['a', 'b', 'c', 'd'];
+        let currentMode = 'concat';
+
+        function toggleBit(index) {
+            // Prevent toggle if button is dimmed (disabled in Repl mode)
+            if (currentMode === 'replicate' && index !== 0) return;
+
+            vector[index] = vector[index] ? 0 : 1;
+            updateUI();
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            // Update button styles
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                if (btn.id === `btn_${mode}`) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            updateUI();
+        }
+
+        function updateUI() {
+            // 1. Calculate Logic based on Mode
+            let finalVector = [0, 0, 0, 0]; // What goes to bus [0..3]
+            let codeStr = "";
+            let outCodeStr = "assign out = bus;"; // Default for single vector
+
+            if (currentMode === 'concat') {
+                // Modified "Normal" -> {a, b, c, d} (Alphabetical / MSB is a)
+                // vector[0](a) -> bus[3]
+                // vector[1](b) -> bus[2]
+                // vector[2](c) -> bus[1]
+                // vector[3](d) -> bus[0]
+                finalVector = [vector[3], vector[2], vector[1], vector[0]];
+                codeStr = "assign bus = {a, b, c, d};";
+
+            } else if (currentMode === 'reverse') {
+                // Modified "Reverse" -> {d, c, b, a} (Reverse Alpha / MSB is d)
+                // Standard mapping: d (vec[3]) -> bus[3], a (vec[0]) -> bus[0]
+                finalVector = [vector[0], vector[1], vector[2], vector[3]];
+                codeStr = "assign bus = {d, c, b, a};";
+
+            } else if (currentMode === 'replicate') {
+                // {4{a}}
+                const val = vector[0];
+                finalVector = [val, val, val, val];
+                codeStr = "assign bus = {4{a}};";
+
+            } else if (currentMode === 'split') {
+                // Keep Split aligned with "Reverse" layout (Standard {d,c,b,a}) for expected bit significance
+                finalVector = [vector[0], vector[1], vector[2], vector[3]];
+                codeStr = "assign bus = {d, c, b, a};";
+                // Output is special
+                outCodeStr = "assign hi = bus[3:2]; assign lo = bus[1:0];";
+            }
+
+            // Calc Int Value
+            const busVal = (finalVector[3] << 3) | (finalVector[2] << 2) | (finalVector[1] << 1) | finalVector[0];
+
+            // 2. Update Inputs (Visual)
+            for (let i = 0; i < 4; i++) {
+                const isActive = vector[i] === 1;
+                const name = names[i];
+                const btn = document.getElementById(`toggle_${name}`);
+                const wIn = document.getElementById(`w_in_${i}`);
+
+                // Active State
+                if (isActive) {
+                    btn.classList.add('active');
+                    wIn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                    wIn.classList.remove('active');
+                }
+
+                // Dimming Logic for Replicate Mode
+                if (currentMode === 'replicate' && i > 0) {
+                    btn.classList.add('dimmed');
+                    wIn.classList.add('dimmed');
+                } else {
+                    btn.classList.remove('dimmed');
+                    wIn.classList.remove('dimmed');
+                }
+            }
+
+            // 3. Update Bus
+            const busWire = document.getElementById('bus_main');
+            if (busVal > 0) busWire.classList.add('active');
+            else busWire.classList.remove('active');
+
+            const binStr = finalVector.slice().reverse().join('');
+            document.getElementById('bus_label').textContent = `4'b${binStr}`;
+            document.getElementById('txt_assign_code').textContent = codeStr;
+
+            // 4. Update Output Code Text
+            const outTxtEl = document.getElementById('txt_assign_out');
+            outTxtEl.textContent = "";
+            if (currentMode === 'split') {
+                // Manual TSPANS for SVG multiline
+                outTxtEl.innerHTML = `<tspan x="630" dy="-10">assign hi = bus[3:2];</tspan><tspan x="630" dy="25">assign lo = bus[1:0];</tspan>`;
+            } else {
+                outTxtEl.textContent = outCodeStr;
+            }
+
+
+            // 5. Update Outputs
+            for (let i = 0; i < 4; i++) {
+                const isActive = finalVector[i] === 1;
+                const wOut = document.getElementById(`w_out_${i}`);
+                const led = document.getElementById(`led_${i}`);
+
+                // Wire & LED Activity
+                if (isActive) {
+                    wOut.classList.add('active');
+                    led.style.fill = '#4caf50';
+                    led.style.filter = 'drop-shadow(0 0 5px #4caf50)';
+                } else {
+                    wOut.classList.remove('active');
+                    led.style.fill = '#0a1628';
+                    led.style.filter = 'none';
+                }
+            }
+
+            // 6. Update Output Labels (Fan-Out Syntax)
+            if (currentMode === 'split') {
+                // Show bus[3:2] and bus[1:0] groupings conceptually
+                // output labels
+                setText('lbl_out_3', 'bus[3]');
+                setText('lbl_out_2', 'bus[2]');
+                setText('lbl_out_1', 'bus[1]');
+                setText('lbl_out_0', 'bus[0]');
+
+                setText('txt_out_3', 'hi[1]');
+                setText('txt_out_2', 'hi[0]');
+                setText('txt_out_1', 'lo[1]');
+                setText('txt_out_0', 'lo[0]');
+
+            } else {
+                for (let i = 0; i < 4; i++) {
+                    setText(`lbl_out_${i}`, `bus[${i}]`);
+                    setText(`txt_out_${i}`, `out[${i}]`);
+                }
+            }
+        }
+
+        function setText(id, txt) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = txt;
+        }
+
+        // Init
+        updateUI();
+
+    </script>
+</body>
+
+</html>

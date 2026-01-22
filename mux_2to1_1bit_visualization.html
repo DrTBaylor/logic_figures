@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplexer Logic Visualization</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            color: #4fc3f7;
+            font-size: 1.8em;
+            letter-spacing: 1px;
+        }
+
+        p.subtitle {
+            margin: 5px 0 0;
+            color: #90a4ae;
+            font-size: 1em;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            min-height: 0;
+            /* Important for flex child scrolling */
+        }
+
+        /* --- LEFT PANEL: DIAGRAM --- */
+        .diagram-panel {
+            flex: 6;
+            background: #0d1b2a;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header {
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid #546e7a;
+            color: #b0bec5;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        svg {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* SVG Styles */
+        .mux-body {
+            fill: #1a237e;
+            stroke: #5c6bc0;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 5px rgba(26, 35, 126, 0.5));
+        }
+
+        .wire {
+            fill: none;
+            stroke: #37474f;
+            stroke-width: 4;
+            stroke-linecap: round;
+            transition: stroke 0.3s ease;
+        }
+
+        .wire.active-low {
+            stroke: #0277bd;
+            /* Blue for 0 */
+            filter: drop-shadow(0 0 2px #0277bd);
+        }
+
+        .wire.active-high {
+            stroke: #00e676;
+            /* Green for 1 */
+            filter: drop-shadow(0 0 4px #00e676);
+        }
+
+        .wire-path {
+            stroke-dasharray: 8 4;
+            animation: flow 1s linear infinite;
+            opacity: 0.6;
+            display: none;
+        }
+
+        @keyframes flow {
+            to {
+                stroke-dashoffset: -12;
+            }
+        }
+
+        .wire-path.showing {
+            display: block;
+        }
+
+        .toggle-switch {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .toggle-switch:hover {
+            transform: scale(1.1);
+        }
+
+        .switch-rect {
+            fill: #263238;
+            stroke: #78909c;
+            stroke-width: 2;
+        }
+
+        .switch-rect.on {
+            fill: #00e676;
+            stroke: #fff;
+        }
+
+        .switch-rect.off {
+            fill: #0277bd;
+            stroke: #fff;
+        }
+
+        .label-text {
+            fill: #eceff1;
+            font-family: monospace;
+            font-size: 14px;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .val-text {
+            fill: #fff;
+            font-weight: bold;
+            font-family: monospace;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        /* --- RIGHT PANEL: CODE --- */
+        .code-panel {
+            flex: 4;
+            background: #263238;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .code-content {
+            flex: 1;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #eceff1;
+            font-size: 16px;
+            line-height: 1.6;
+            overflow-y: auto;
+            white-space: pre;
+        }
+
+        /* Syntax Highlighting */
+        .kwd {
+            color: #ba68c8;
+            font-weight: bold;
+        }
+
+        /* keyword */
+        .mod {
+            color: #4fc3f7;
+        }
+
+        /* module name */
+        .type {
+            color: #ffd54f;
+        }
+
+        /* wire/reg */
+        .port {
+            color: #ff8a65;
+        }
+
+        /* ports */
+        .op {
+            color: #fff;
+        }
+
+        /* operators */
+        .comment {
+            color: #546e7a;
+            font-style: italic;
+        }
+
+        .highlight-line {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .active-logic {
+            background: rgba(0, 230, 118, 0.15);
+            /* Green tint */
+            border-left: 3px solid #00e676;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            color: #cfd8dc;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>1-Bit 2-to-1 Multiplexer</h1>
+        <p class="subtitle">Interactive Logic Visualization</p>
+    </div>
+
+    <div class="main-container">
+        <!-- DIAGRAM PANEL -->
+        <div class="diagram-panel">
+            <div class="panel-header">
+                <span>RTL Schematic</span>
+                <span style="font-size: 0.8em; color: #78909c;">Click switches to toggle inputs</span>
+            </div>
+
+            <svg id="mainSvg" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet">
+
+                <!-- MUX Symbol (Trapezoid-ish) -->
+                <!-- x: 300 center. Width 80 top, 80 bottom? No Mux is usually trapezoid. -->
+                <!-- Let's draw a vertical trapezoid. left side variable width? No usually straight inputs. -->
+                <!-- Standard Mux: Trapezoid narrowing towards output. -->
+                <!-- Inputs on Left, Output on Right. -->
+                <polygon points="250,100 350,130 350,270 250,300" class="mux-body" />
+                <text x="300" y="200" fill="white" text-anchor="middle" dominant-baseline="middle" font-weight="bold"
+                    font-size="20">MUX</text>
+                <text x="320" y="260" fill="#9fa8da" text-anchor="middle" font-size="12">2:1</text>
+
+                <!-- Wires -->
+                <!-- Input 0 (Top) -->
+                <line id="wire_i0" x1="100" y1="140" x2="250" y2="140" class="wire" />
+                <text x="240" y="135" fill="#b0bec5" font-size="12" text-anchor="end">i0</text>
+
+                <!-- Input 1 (Bottom) -->
+                <line id="wire_i1" x1="100" y1="260" x2="250" y2="260" class="wire" />
+                <text x="240" y="255" fill="#b0bec5" font-size="12" text-anchor="end">i1</text>
+
+                <!-- Select (Bottom/Mid) -->
+                <line id="wire_sel" x1="300" y1="350" x2="300" y2="285" class="wire" />
+                <text x="310" y="295" fill="#b0bec5" font-size="12" text-anchor="start">sel</text>
+
+                <!-- Output -->
+                <line id="wire_y" x1="350" y1="200" x2="500" y2="200" class="wire" />
+                <text x="360" y="190" fill="#b0bec5" font-size="12" text-anchor="start">y</text>
+
+                <!-- Internal Paths (Animated) -->
+                <!-- Path from i0 to y -->
+                <path id="path_i0" d="M 250 140 C 280 140, 320 200, 350 200" class="wire active-high wire-path"
+                    stroke-width="2" fill="none" />
+                <!-- Path from i1 to y -->
+                <path id="path_i1" d="M 250 260 C 280 260, 320 200, 350 200" class="wire active-high wire-path"
+                    stroke-width="2" fill="none" />
+
+
+                <!-- Interactivity Switches -->
+
+                <!-- Switch i0 -->
+                <g transform="translate(80, 140)">
+                    <g class="toggle-switch" onclick="toggle('i0')">
+                        <rect x="-20" y="-15" width="40" height="30" rx="4" class="switch-rect" id="sw_i0" />
+                        <text x="0" y="1" class="val-text" id="txt_i0">0</text>
+                        <text x="0" y="-25" class="label-text">i0</text>
+                    </g>
+                </g>
+
+                <!-- Switch i1 -->
+                <g transform="translate(80, 260)">
+                    <g class="toggle-switch" onclick="toggle('i1')">
+                        <rect x="-20" y="-15" width="40" height="30" rx="4" class="switch-rect" id="sw_i1" />
+                        <text x="0" y="1" class="val-text" id="txt_i1">0</text>
+                        <text x="0" y="-25" class="label-text">i1</text>
+                    </g>
+                </g>
+
+                <!-- Switch sel -->
+                <g transform="translate(300, 350)">
+                    <g class="toggle-switch" onclick="toggle('sel')">
+                        <rect x="-20" y="-15" width="40" height="30" rx="4" class="switch-rect" id="sw_sel" />
+                        <text x="0" y="1" class="val-text" id="txt_sel">0</text>
+                        <text x="0" y="28" class="label-text">sel</text>
+                    </g>
+                </g>
+
+
+                <!-- Output Indicator -->
+                <g transform="translate(520, 200)">
+                    <circle r="15" class="switch-rect" id="ind_y" />
+                    <text x="0" y="1" class="val-text" id="txt_y">0</text>
+                    <text x="0" y="-25" class="label-text">y</text>
+                </g>
+
+            </svg>
+
+            <div class="controls">
+                Status: <span id="statusText" style="color:#4fc3f7">Waiting...</span>
+            </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="code-panel">
+            <div class="panel-header">Verilog Source</div>
+            <div class="code-content">
+                <span class="kwd">module</span> <span class="mod">mux_2to1_1bit</span> (
+                <span class="kwd">input</span> <span class="type">wire</span> i0,
+                <span class="kwd">input</span> <span class="type">wire</span> i1,
+                <span class="kwd">input</span> <span class="type">wire</span> sel,
+                <span class="kwd">output</span> <span class="type">wire</span> y
+                );
+
+                <span class="comment">// Continuous Assignment</span>
+                <span class="comment">// If sel is 1, y = i1</span>
+                <span class="comment">// If sel is 0, y = i0</span>
+
+                <div id="code_assign" class="highlight-line" style="padding: 2px 5px;">
+                    <span class="kwd">assign</span> y = sel ? i1 : i0;
+                </div>
+
+                <span class="kwd">endmodule</span>
+            </div>
+
+            <div style="padding: 20px; border-top: 1px solid #546e7a;">
+                <h4 style="margin: 0 0 10px 0; color: #b0bec5;">Logic Analysis</h4>
+                <div id="logicExplanation" style="font-size: 0.9em; color: #90a4ae;">
+                    Current state explanation...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            i0: 0,
+            i1: 0,
+            sel: 0,
+            y: 0
+        };
+
+        function toggle(key) {
+            state[key] = state[key] === 0 ? 1 : 0;
+            update();
+        }
+
+        function update() {
+            // Calculate Logic
+            // y = sel ? i1 : i0
+            state.y = state.sel === 1 ? state.i1 : state.i0;
+
+            // Update UI
+            updateSwitch('i0', state.i0);
+            updateSwitch('i1', state.i1);
+            updateSwitch('sel', state.sel);
+            updateSwitch('y', state.y, true); // Output is indicator
+
+            // Wires
+            setWireColor('wire_i0', state.i0);
+            setWireColor('wire_i1', state.i1);
+            setWireColor('wire_sel', state.sel);
+            setWireColor('wire_y', state.y);
+
+            // Paths
+            const pathI0 = document.getElementById('path_i0');
+            const pathI1 = document.getElementById('path_i1');
+
+            if (state.sel === 0) {
+                // i0 selected
+                pathI0.style.display = 'block';
+                pathI1.style.display = 'none';
+                pathI0.setAttribute('stroke', state.i0 ? '#00e676' : '#0277bd');
+                updateStatus(`Select (sel) is 0. Input <b>i0 (${state.i0})</b> is passed to <b>y</b>.`);
+            } else {
+                // i1 selected
+                pathI1.style.display = 'block';
+                pathI0.style.display = 'none';
+                pathI1.setAttribute('stroke', state.i1 ? '#00e676' : '#0277bd');
+                updateStatus(`Select (sel) is 1. Input <b>i1 (${state.i1})</b> is passed to <b>y</b>.`);
+            }
+
+            // Code Highlight
+            const codeBlock = document.getElementById('code_assign');
+            codeBlock.classList.add('active-logic');
+
+            // Text Logic
+            const logicDiv = document.getElementById('logicExplanation');
+            logicDiv.innerHTML = `
+                <code>sel == ${state.sel}</code><br>
+                Selected Path: <code>i${state.sel}</code> &rarr; <code>y</code><br>
+                Value: <code>${state.sel === 0 ? state.i0 : state.i1}</code>
+            `;
+        }
+
+        function updateSwitch(id, val, isOutput = false) {
+            const rect = document.getElementById(isOutput ? `ind_${id}` : `sw_${id}`);
+            const text = document.getElementById(`txt_${id}`);
+
+            text.textContent = val;
+
+            if (val === 1) {
+                rect.classList.remove('off');
+                rect.classList.add('on');
+            } else {
+                rect.classList.remove('on');
+                rect.classList.add('off');
+            }
+        }
+
+        function setWireColor(id, val) {
+            const el = document.getElementById(id);
+            if (val === 1) {
+                el.classList.remove('active-low');
+                el.classList.add('active-high');
+            } else {
+                el.classList.remove('active-high');
+                el.classList.add('active-low');
+            }
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('statusText').innerHTML = msg;
+        }
+
+        // Init
+        update();
+
+    </script>
+</body>
+
+</html>

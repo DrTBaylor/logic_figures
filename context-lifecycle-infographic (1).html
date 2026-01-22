@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Lifecycle: When to Start, Continue, or Reset</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(180deg, #0a0a0f 0%, #0d1117 100%);
+            color: #e8e8ed;
+            padding: 50px 60px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #63b3ed, #ffffff, #b794f4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            font-size: 20px;
+            font-weight: 300;
+            color: #8888a0;
+        }
+
+        /* Main layout */
+        .main-content {
+            display: flex;
+            gap: 50px;
+            height: 860px;
+        }
+
+        /* Center - State diagram */
+        .diagram-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .state-diagram {
+            width: 900px;
+            height: 750px;
+            position: relative;
+        }
+
+        /* Connection paths */
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .connection-path {
+            fill: none;
+            stroke: rgba(255,255,255,0.5);
+            stroke-width: 3;
+        }
+
+        .arrow-head {
+            fill: rgba(255,255,255,0.7);
+        }
+
+        /* State nodes */
+        .state-node {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .state-node:hover {
+            transform: scale(1.05);
+        }
+
+        .state-node.highlighted {
+            transform: scale(1.08);
+        }
+
+        .state-node .icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+        }
+
+        .state-node h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .state-node p {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.8;
+            padding: 0 20px;
+            line-height: 1.4;
+        }
+
+        /* Individual state styles */
+        .state-node.start-fresh {
+            top: 20px;
+            left: 350px;
+            background: linear-gradient(135deg, rgba(72,187,120,0.25) 0%, rgba(72,187,120,0.1) 100%);
+            border: 2px solid rgba(72,187,120,0.5);
+            box-shadow: 0 0 40px rgba(72,187,120,0.2);
+        }
+
+        .state-node.start-fresh.highlighted {
+            border-color: rgba(72,187,120,0.9);
+            box-shadow: 0 0 60px rgba(72,187,120,0.4);
+        }
+
+        .state-node.start-fresh h3 { color: #68d391; }
+        .state-node.start-fresh .icon { color: #68d391; }
+
+        .state-node.continue {
+            top: 275px;
+            left: 650px;
+            background: linear-gradient(135deg, rgba(99,179,237,0.25) 0%, rgba(99,179,237,0.1) 100%);
+            border: 2px solid rgba(99,179,237,0.5);
+            box-shadow: 0 0 40px rgba(99,179,237,0.2);
+        }
+
+        .state-node.continue.highlighted {
+            border-color: rgba(99,179,237,0.9);
+            box-shadow: 0 0 60px rgba(99,179,237,0.4);
+        }
+
+        .state-node.continue h3 { color: #63b3ed; }
+        .state-node.continue .icon { color: #63b3ed; }
+
+        .state-node.steer {
+            top: 275px;
+            left: 50px;
+            background: linear-gradient(135deg, rgba(236,201,75,0.25) 0%, rgba(236,201,75,0.1) 100%);
+            border: 2px solid rgba(236,201,75,0.5);
+            box-shadow: 0 0 40px rgba(236,201,75,0.2);
+        }
+
+        .state-node.steer.highlighted {
+            border-color: rgba(236,201,75,0.9);
+            box-shadow: 0 0 60px rgba(236,201,75,0.4);
+        }
+
+        .state-node.steer h3 { color: #ecc94b; }
+        .state-node.steer .icon { color: #ecc94b; }
+
+        .state-node.extract-reset {
+            top: 530px;
+            left: 350px;
+            background: linear-gradient(135deg, rgba(183,148,244,0.25) 0%, rgba(183,148,244,0.1) 100%);
+            border: 2px solid rgba(183,148,244,0.5);
+            box-shadow: 0 0 40px rgba(183,148,244,0.2);
+        }
+
+        .state-node.extract-reset.highlighted {
+            border-color: rgba(183,148,244,0.9);
+            box-shadow: 0 0 60px rgba(183,148,244,0.4);
+        }
+
+        .state-node.extract-reset h3 { color: #b794f4; }
+        .state-node.extract-reset .icon { color: #b794f4; }
+
+        /* Transition labels */
+        .transition-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #a0a0b0;
+            white-space: nowrap;
+        }
+
+        .transition-label.t1 { top: 175px; left: 590px; }
+        .transition-label.t2 { top: 175px; left: 220px; }
+        .transition-label.t3 { top: 520px; left: 620px; }
+        .transition-label.t4 { top: 520px; left: 165px; }
+        .transition-label.t5 { top: 400px; left: 425px; }
+        .transition-label.t6 { top: 320px; left: 460px; }
+
+        /* Right panel - Detail */
+        .detail-panel {
+            width: 420px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #666680;
+            margin-bottom: 16px;
+        }
+
+        .detail-card {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .detail-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .detail-header .state-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-header .state-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .detail-header .state-icon.start-fresh { background: rgba(72,187,120,0.2); color: #68d391; }
+        .detail-header .state-icon.continue { background: rgba(99,179,237,0.2); color: #63b3ed; }
+        .detail-header .state-icon.steer { background: rgba(236,201,75,0.2); color: #ecc94b; }
+        .detail-header .state-icon.extract-reset { background: rgba(183,148,244,0.2); color: #b794f4; }
+
+        .detail-header h3 {
+            font-size: 22px;
+            font-weight: 500;
+        }
+
+        .detail-header h3.start-fresh { color: #68d391; }
+        .detail-header h3.continue { color: #63b3ed; }
+        .detail-header h3.steer { color: #ecc94b; }
+        .detail-header h3.extract-reset { color: #b794f4; }
+
+        .detail-section {
+            margin-bottom: 18px;
+        }
+
+        .detail-section h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 10px;
+            color: #8888a0;
+        }
+
+        .detail-section p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #c8c8d8;
+            font-weight: 300;
+        }
+
+        .when-box {
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+
+        .when-list {
+            list-style: none;
+        }
+
+        .when-list li {
+            font-size: 14px;
+            color: #b8b8c8;
+            padding: 6px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .when-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #666680;
+        }
+
+        .action-box {
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+
+        .action-box.start-fresh { background: rgba(72,187,120,0.1); border-left: 3px solid rgba(72,187,120,0.5); }
+        .action-box.continue { background: rgba(99,179,237,0.1); border-left: 3px solid rgba(99,179,237,0.5); }
+        .action-box.steer { background: rgba(236,201,75,0.1); border-left: 3px solid rgba(236,201,75,0.5); }
+        .action-box.extract-reset { background: rgba(183,148,244,0.1); border-left: 3px solid rgba(183,148,244,0.5); }
+
+        .action-box p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .example-box {
+            background: rgba(168,208,255,0.08);
+            border-radius: 10px;
+            padding: 14px 16px;
+            border-left: 3px solid rgba(168,208,255,0.3);
+            margin-top: auto;
+        }
+
+        .example-box h4 {
+            color: #a8d0ff;
+        }
+
+        .example-box p {
+            font-size: 13px;
+            font-style: italic;
+            color: #a0a0b8;
+        }
+
+        /* Default state */
+        .default-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #666680;
+        }
+
+        .default-content svg {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 20px;
+            opacity: 0.4;
+        }
+
+        .default-content p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Quick reference */
+        .quick-ref {
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+        }
+
+        .quick-ref h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 12px;
+            color: #666680;
+        }
+
+        .quick-ref-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .quick-ref-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #a0a0b0;
+        }
+
+        .quick-ref-item .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .quick-ref-item .dot.start-fresh { background: #68d391; }
+        .quick-ref-item .dot.continue { background: #63b3ed; }
+        .quick-ref-item .dot.steer { background: #ecc94b; }
+        .quick-ref-item .dot.extract-reset { background: #b794f4; }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <header class="header">
+                <h1>The Context Lifecycle</h1>
+                <p class="subtitle">Strategic decisions for managing conversation context</p>
+            </header>
+
+            <div class="main-content">
+                
+                <!-- State Diagram -->
+                <div class="diagram-area">
+                    <div class="state-diagram">
+                        <!-- Connection paths -->
+                        <svg class="connections" viewBox="0 0 900 750">
+                            <!-- Start Fresh → Continue -->
+                            <path class="connection-path" d="M 550,120 Q 650,120 700,220" />
+                            <polygon class="arrow-head" points="695,225 705,225 700,240" />
+                            
+                            <!-- Start Fresh → Steer -->
+                            <path class="connection-path" d="M 350,120 Q 250,120 200,220" />
+                            <polygon class="arrow-head" points="195,225 205,225 200,240" />
+                            
+                            <!-- Continue → Extract/Reset -->
+                            <path class="connection-path" d="M 700,480 Q 650,580 550,630" />
+                            <polygon class="arrow-head" points="545,625 555,635 540,640" />
+                            
+                            <!-- Steer → Extract/Reset -->
+                            <path class="connection-path" d="M 200,480 Q 250,580 350,630" />
+                            <polygon class="arrow-head" points="355,625 345,635 360,640" />
+                            
+                            <!-- Continue ↔ Steer -->
+                            <path class="connection-path" d="M 250,350 L 650,350" />
+                            <polygon class="arrow-head" points="250,345 250,355 235,350" />
+                            <polygon class="arrow-head" points="650,345 650,355 665,350" />
+                            
+                            <!-- Extract/Reset → Start Fresh (direct path up) -->
+                            <path class="connection-path" d="M 450,530 L 450,220" />
+                            <polygon class="arrow-head" points="445,225 455,225 450,210" />
+                        </svg>
+
+                        <!-- State Nodes -->
+                        <div class="state-node start-fresh" data-state="start-fresh">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                            <h3>Start Fresh</h3>
+                            <p>Begin with clean context</p>
+                        </div>
+
+                        <div class="state-node continue" data-state="continue">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                            <h3>Continue</h3>
+                            <p>Build on shared understanding</p>
+                        </div>
+
+                        <div class="state-node steer" data-state="steer">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v8M8 12h8"/>
+                            </svg>
+                            <h3>Steer</h3>
+                            <p>Redirect without resetting</p>
+                        </div>
+
+                        <div class="state-node extract-reset" data-state="extract-reset">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <h3>Extract & Reset</h3>
+                            <p>Save outputs, then restart</p>
+                        </div>
+
+                        <!-- Transition labels -->
+                        <div class="transition-label t1">On topic? Build depth</div>
+                        <div class="transition-label t2">Going off-track?</div>
+                        <div class="transition-label t3">Hit a wall?</div>
+                        <div class="transition-label t4">Can't course-correct?</div>
+                        <div class="transition-label t5">Needs adjustment</div>
+                        <div class="transition-label t6">Ready for new topic</div>
+                    </div>
+                </div>
+
+                <!-- Detail Panel -->
+                <div class="detail-panel">
+                    <div class="panel-header">Strategy Details</div>
+                    
+                    <div class="detail-card">
+                        <!-- Default -->
+                        <div class="detail-content active" id="default-detail">
+                            <div class="default-content">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 16v-4M12 8h.01"/>
+                                </svg>
+                                <p>Click a state in the diagram<br/>to learn when and how to use it</p>
+                            </div>
+                        </div>
+
+                        <!-- Start Fresh -->
+                        <div class="detail-content" id="start-fresh-detail">
+                            <div class="detail-header">
+                                <div class="state-icon start-fresh">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 6v6l4 2"/>
+                                    </svg>
+                                </div>
+                                <h3 class="start-fresh">Start Fresh</h3>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>What It Means</h4>
+                                <p>Begin a new conversation with zero accumulated context. The model has no history from previous exchanges—only system context and memory.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>When to Use</h4>
+                                <div class="when-box">
+                                    <ul class="when-list">
+                                        <li>Switching to a completely new topic</li>
+                                        <li>Previous conversation became noisy/unfocused</li>
+                                        <li>You want a "second opinion" without prior bias</li>
+                                        <li>Starting a task that needs fresh perspective</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>The Action</h4>
+                                <div class="action-box start-fresh">
+                                    <p>Click "New Chat" or use keyboard shortcut. Consider briefly stating relevant context in your first message if needed.</p>
+                                </div>
+                            </div>
+
+                            <div class="example-box">
+                                <h4>Example</h4>
+                                <p>You've been debugging Python code for 20 messages. Now you want help writing a cover letter—start fresh so code context doesn't bleed in.</p>
+                            </div>
+                        </div>
+
+                        <!-- Continue -->
+                        <div class="detail-content" id="continue-detail">
+                            <div class="detail-header">
+                                <div class="state-icon continue">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                                    </svg>
+                                </div>
+                                <h3 class="continue">Continue</h3>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>What It Means</h4>
+                                <p>Keep building within the current conversation. Each exchange adds to shared context, creating compounding understanding.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>When to Use</h4>
+                                <div class="when-box">
+                                    <ul class="when-list">
+                                        <li>Iterating on the same document or code</li>
+                                        <li>Asking follow-up questions on same topic</li>
+                                        <li>Refining output through multiple rounds</li>
+                                        <li>Context from earlier messages is still relevant</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>The Action</h4>
+                                <div class="action-box continue">
+                                    <p>Simply send your next message. Reference earlier context naturally: "Now let's..." or "Building on that..."</p>
+                                </div>
+                            </div>
+
+                            <div class="example-box">
+                                <h4>Example</h4>
+                                <p>You're refining a business proposal. Message 1 drafted it, message 2 adjusted tone, message 3 adds metrics. Each builds on the last.</p>
+                            </div>
+                        </div>
+
+                        <!-- Steer -->
+                        <div class="detail-content" id="steer-detail">
+                            <div class="detail-header">
+                                <div class="state-icon steer">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 8v8M8 12h8"/>
+                                    </svg>
+                                </div>
+                                <h3 class="steer">Steer</h3>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>What It Means</h4>
+                                <p>Redirect the conversation's direction without throwing away useful context. A mid-course correction that preserves what's valuable.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>When to Use</h4>
+                                <div class="when-box">
+                                    <ul class="when-list">
+                                        <li>Response went in wrong direction</li>
+                                        <li>Need to correct a misunderstanding</li>
+                                        <li>Want to shift focus within same topic</li>
+                                        <li>Output style doesn't match what you need</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>The Action</h4>
+                                <div class="action-box steer">
+                                    <p>Explicitly redirect: "Actually, let's focus on X instead" or "That's not quite right—I meant Y." Be direct about the correction.</p>
+                                </div>
+                            </div>
+
+                            <div class="example-box">
+                                <h4>Example</h4>
+                                <p>"This is too formal. Rewrite in a casual, conversational tone—like I'm explaining to a friend over coffee."</p>
+                            </div>
+                        </div>
+
+                        <!-- Extract & Reset -->
+                        <div class="detail-content" id="extract-reset-detail">
+                            <div class="detail-header">
+                                <div class="state-icon extract-reset">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                </div>
+                                <h3 class="extract-reset">Extract & Reset</h3>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>What It Means</h4>
+                                <p>Save the valuable outputs from the current conversation, then start fresh. You keep the results while shedding accumulated noise.</p>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>When to Use</h4>
+                                <div class="when-box">
+                                    <ul class="when-list">
+                                        <li>Conversation got long and unfocused</li>
+                                        <li>Good output buried in messy context</li>
+                                        <li>Need to continue with clean slate + summary</li>
+                                        <li>Moving to next phase of a project</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="detail-section">
+                                <h4>The Action</h4>
+                                <div class="action-box extract-reset">
+                                    <p>Copy key outputs or ask Claude to summarize. Start new chat and paste the summary as context: "Continuing from this: [summary]"</p>
+                                </div>
+                            </div>
+
+                            <div class="example-box">
+                                <h4>Example</h4>
+                                <p>After 30 messages refining a project plan, copy the final version. Start fresh: "Here's my project plan. Now help me create the timeline."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-ref">
+                        <h4>Quick Reference</h4>
+                        <div class="quick-ref-grid">
+                            <div class="quick-ref-item">
+                                <div class="dot start-fresh"></div>
+                                <span>New topic → Start Fresh</span>
+                            </div>
+                            <div class="quick-ref-item">
+                                <div class="dot continue"></div>
+                                <span>Same topic → Continue</span>
+                            </div>
+                            <div class="quick-ref-item">
+                                <div class="dot steer"></div>
+                                <span>Wrong direction → Steer</span>
+                            </div>
+                            <div class="quick-ref-item">
+                                <div class="dot extract-reset"></div>
+                                <span>Too messy → Extract & Reset</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Interactive state selection
+        const stateNodes = document.querySelectorAll('.state-node');
+        const detailContents = document.querySelectorAll('.detail-content');
+
+        function selectState(stateName) {
+            // Update node highlights
+            stateNodes.forEach(node => {
+                node.classList.toggle('highlighted', node.dataset.state === stateName);
+            });
+
+            // Update detail panel
+            detailContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const targetDetail = document.getElementById(`${stateName}-detail`);
+            if (targetDetail) {
+                targetDetail.classList.add('active');
+            }
+        }
+
+        // Add click handlers
+        stateNodes.forEach(node => {
+            node.addEventListener('click', () => {
+                selectState(node.dataset.state);
+            });
+        });
+    </script>
+</body>
+</html>

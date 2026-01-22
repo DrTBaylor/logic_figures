@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTL & Module Instantiation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: #e0e0e0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            color: #4fc3f7;
+            font-size: 1.4em;
+        }
+
+        p {
+            margin: 5px 0 0;
+            color: #90a4ae;
+            font-size: 0.9em;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        /* LEFT PANEL: DIAGRAM */
+        .diagram-panel {
+            flex: 6;
+            background: #0d1b2a;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid #546e7a;
+            color: #b0bec5;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .panel-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .panel-instructions {
+            font-size: 0.85em;
+            color: #90a4ae;
+            font-weight: normal;
+        }
+
+        svg {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* SVG Elements */
+        .module-group {
+            cursor: grab;
+        }
+
+        .module-group.placed {
+            cursor: default;
+        }
+
+        .module-group:active {
+            cursor: grabbing;
+        }
+
+        .module-box {
+            fill: #1a237e;
+            stroke: #5c6bc0;
+            stroke-width: 2;
+            rx: 8;
+        }
+
+        .module-box:hover {
+            stroke: #7986cb;
+        }
+
+        .module-label {
+            fill: #fff;
+            font-family: sans-serif;
+            font-weight: bold;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .module-sublabel {
+            fill: #9fa8da;
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .drop-zone {
+            fill: rgba(255, 255, 255, 0.05);
+            stroke: #546e7a;
+            stroke-width: 2;
+            stroke-dasharray: 5 5;
+            rx: 8;
+        }
+
+        .drop-zone-label {
+            fill: #546e7a;
+            text-anchor: middle;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .bin-area {
+            fill: rgba(0, 0, 0, 0.2);
+            stroke: #37474f;
+        }
+
+        .port-circle {
+            fill: #0d1b2a;
+            stroke: #90a4ae;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+            /* Hidden until placed */
+        }
+
+        .module-group.placed .port-circle {
+            display: block;
+        }
+
+        .port-circle:hover {
+            fill: #4fc3f7;
+            stroke: #fff;
+        }
+
+        .port-circle.selected {
+            fill: #ffff00;
+            stroke: #ffff00;
+        }
+
+        .port-circle.connected {
+            fill: #4caf50;
+            stroke: #4caf50;
+        }
+
+        .port-circle.target-active {
+            stroke: #ffff00;
+            stroke-dasharray: 4 2;
+            animation: dash 1s linear infinite;
+        }
+
+        .port-text {
+            fill: #b0bec5;
+            font-size: 12px;
+            font-family: monospace;
+            pointer-events: none;
+            display: none;
+            /* Hidden until placed */
+        }
+
+        .module-group.placed .port-text {
+            display: block;
+        }
+
+        .wire-path {
+            fill: none;
+            stroke: #37474f;
+            stroke-width: 2;
+            stroke-linecap: round;
+            pointer-events: none;
+        }
+
+        .wire-path.connected {
+            stroke: #4caf50;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 2px #4caf50);
+        }
+
+        .wire-label {
+            fill: #eceff1;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: monospace;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            text-shadow: 0 0 4px #000;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -12;
+            }
+        }
+
+        /* RIGHT PANEL: CODE */
+        .code-panel {
+            flex: 4;
+            background: #263238;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .code-content {
+            flex: 1;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #eceff1;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-y: auto;
+            white-space: pre;
+        }
+
+        .code-keyword {
+            color: #ba68c8;
+        }
+
+        /* purple */
+        .code-module {
+            color: #4fc3f7;
+        }
+
+        /* blue */
+        .code-wire {
+            color: #ffd54f;
+        }
+
+        /* yellow */
+        .code-port {
+            color: #ff8a65;
+        }
+
+        /* orange */
+        .code-comment {
+            color: #607d8b;
+            font-style: italic;
+        }
+
+        .code-connect {
+            color: #4caf50;
+            font-weight: bold;
+        }
+
+        .code-missing {
+            color: #ef5350;
+            border-bottom: 1px dashed #ef5350;
+        }
+
+        .code-placeholder {
+            color: #90a4ae;
+            font-style: italic;
+            border: 1px dashed #546e7a;
+            padding: 2px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #fff;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>RTL Instantiation & Wiring</h1>
+        <p>1. Drag modules from the Bin to the Board. &nbsp;&nbsp; 2. Click ports to wire them up.</p>
+    </div>
+
+    <div class="main-container">
+        <!-- SVG DIAGRAM -->
+        <div class="diagram-panel">
+            <div class="panel-header">
+                <div class="panel-title-row">
+                    <span>Block Diagram (system_top)</span>
+                    <button onclick="resetAll()"
+                        style="background:none; border:1px solid #78909c; color:#cfd8dc; cursor:pointer; border-radius:4px; padding:2px 8px;">Reset</button>
+                </div>
+                <div class="panel-instructions">
+                    1. Drag modules from the <strong>Component Bin</strong> to the dotted zones. <br>
+                    2. Click a <strong>source port</strong> (right side) then a <strong>destination port</strong> (left
+                    side) to wire them.
+                </div>
+            </div>
+
+            <svg id="mainSvg" viewBox="0 0 800 550" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrow-conn" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#4caf50" />
+                    </marker>
+                </defs>
+
+                <!-- System Top Outline -->
+                <rect x="10" y="10" width="780" height="380" fill="none" stroke="#37474f" stroke-dasharray="5 5"
+                    rx="10" />
+                <text x="780" y="30" fill="#37474f" text-anchor="end" font-family="monospace">module system_top</text>
+
+                <!-- Component Bin Area -->
+                <rect x="10" y="410" width="780" height="130" class="bin-area" rx="10" />
+                <text x="400" y="430" fill="#90a4ae" text-anchor="middle" font-weight="bold">COMPONENT BIN (Drag modules
+                    from here)</text>
+
+                <!-- Drop Zones -->
+                <g id="zone_u_gen" transform="translate(50, 100)">
+                    <rect class="drop-zone" width="140" height="200" />
+                    <text x="70" y="100" class="drop-zone-label">Place Generator</text>
+                </g>
+                <g id="zone_u_filt" transform="translate(300, 100)">
+                    <rect class="drop-zone" width="140" height="200" />
+                    <text x="70" y="100" class="drop-zone-label">Place Filter</text>
+                </g>
+                <g id="zone_u_disp" transform="translate(550, 100)">
+                    <rect class="drop-zone" width="140" height="200" />
+                    <text x="70" y="100" class="drop-zone-label">Place Display</text>
+                </g>
+
+                <!-- Wires Layer (Dynamic) -->
+                <g id="wiresLayer"></g>
+
+                <!-- Draggable Modules (Initially in Bin) -->
+                <!-- Generator -->
+                <g id="mod_u_gen" class="module-group" transform="translate(60, 450)" data-target="zone_u_gen">
+                    <rect class="module-box" width="140" height="80" rx="8" />
+                    <!-- Collapsed View initially? No, keep size but scale? Keeping same size for simplicity -->
+                    <text x="70" y="30" class="module-label">generator</text>
+                    <text x="70" y="50" class="module-sublabel">u_gen</text>
+
+                    <!-- Ports (Hidden until placed) -->
+                    <!-- data_out -->
+                    <g class="port-group" data-id="gen_data" data-type="source" transform="translate(140, 30)">
+                        <!-- y adjusted for big box -->
+                        <path d="M0,0 L20,0" stroke="#546e7a" stroke-width="2" class="port-circle" />
+                        <circle cx="0" cy="0" r="6" class="port-circle" id="p_gen_data" />
+                        <text x="-10" y="4" text-anchor="end" class="port-text">data_out</text>
+                    </g>
+                    <!-- valid -->
+                    <g class="port-group" data-id="gen_valid" data-type="source" transform="translate(140, 90)">
+                        <path d="M0,0 L20,0" stroke="#546e7a" stroke-width="2" class="port-circle" />
+                        <circle cx="0" cy="0" r="6" class="port-circle" id="p_gen_valid" />
+                        <text x="-10" y="4" text-anchor="end" class="port-text">valid_out</text>
+                    </g>
+                </g>
+
+                <!-- Filter -->
+                <g id="mod_u_filt" class="module-group" transform="translate(320, 450)" data-target="zone_u_filt">
+                    <rect class="module-box" width="140" height="80" />
+                    <text x="70" y="30" class="module-label">filter</text>
+                    <text x="70" y="50" class="module-sublabel">u_filt</text>
+
+                    <!-- data_in -->
+                    <g class="port-group" data-id="filt_data_in" data-type="sink" transform="translate(0, 30)">
+                        <path d="M-20,0 L0,0" stroke="#546e7a" stroke-width="2" class="port-circle" />
+                        <circle cx="0" cy="0" r="6" class="port-circle" id="p_filt_data_in" />
+                        <text x="12" y="4" text-anchor="start" class="port-text">data_in</text>
+                    </g>
+                    <!-- val_in -->
+                    <g class="port-group" data-id="filt_valid_in" data-type="sink" transform="translate(0, 90)">
+                        <path d="M-20,0 L0,0" stroke="#546e7a" stroke-width="2" class="port-circle" />
+                        <circle cx="0" cy="0" r="6" class="port-circle" id="p_filt_valid_in" />
+                        <text x="12" y="4" text-anchor="start" class="port-text">val_in</text>
+                    </g>
+                    <!-- result -->
+                    <g class="port-group" data-id="filt_result" data-type="source" transform="translate(140, 60)">
+                        <path d="M0,0 L20,0" stroke="#546e7a" stroke-width="2" class="port-circle" />
+                        <circle cx="0" cy="0" r="6" class="port-circle" id="p_filt_result" />
+                        <text x="-10" y="4" text-anchor="end" class="port-text">result</text>
+                    </g>
+                </g>
+
+                <!-- Display -->
+                <g id="mod_u_disp" class="module-group" transform="translate(580, 450)" data-target="zone_u_disp">
+                    <rect class="module-box" width="140" height="80" />
+                    <text x="70" y="30" class="module-label">display</text>
+                    <text x="70" y="50" class="module-sublabel">u_disp</text>
+
+                    <!-- pixel_in -->
+                    <g class="port-group" data-id="disp_pixel" data-type="sink" transform="translate(0, 60)">
+                        <path d="M-20,0 L0,0" stroke="#546e7a" stroke-width="2" class="port-circle" />
+                        <circle cx="0" cy="0" r="6" class="port-circle" id="p_disp_pixel" />
+                        <text x="12" y="4" text-anchor="start" class="port-text">pixel_in</text>
+                    </g>
+                </g>
+
+            </svg>
+            <div id="msgBox" class="instructions">Drag modules to their zones...</div>
+        </div>
+
+        <!-- RIGHT PANEL: CODE -->
+        <div class="code-panel">
+            <div class="panel-header">Verilog Source</div>
+            <div class="code-content" id="codeContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const placements = {
+            'mod_u_gen': false,
+            'mod_u_filt': false,
+            'mod_u_disp': false
+        };
+
+        const connections = {
+            'gen_data': null,
+            'gen_valid': null,
+            'filt_result': null
+        };
+
+        const validPairs = {
+            'gen_data': 'filt_data_in',
+            'gen_valid': 'filt_valid_in',
+            'filt_result': 'disp_pixel'
+        };
+
+        const wireNames = {
+            'gen_data': 'link_data',
+            'gen_valid': 'link_valid',
+            'filt_result': 'link_res'
+        };
+
+        const sinkToSourceConfig = {
+            'filt_data_in': 'gen_data',
+            'filt_valid_in': 'gen_valid',
+            'disp_pixel': 'filt_result'
+        };
+
+        // Initial Coordinates (Bin) vs Target Coordinates (Zones)
+        const initialPos = {
+            'mod_u_gen': { x: 60, y: 450, h: 80 },
+            'mod_u_filt': { x: 320, y: 450, h: 80 },
+            'mod_u_disp': { x: 580, y: 450, h: 80 }
+        };
+
+        const targetPos = {
+            'mod_u_gen': { x: 50, y: 100, h: 200 },
+            'mod_u_filt': { x: 300, y: 100, h: 200 },
+            'mod_u_disp': { x: 550, y: 100, h: 200 }
+        };
+
+        // Port Y offsets handling - we need to adjust port positions when resizing/moving
+        // For simplicity, I'm manually creating the layouts. 
+        // If we want "morphing", we'd need more complex logic.
+        // Instead: "Collapsed" ports are hidden. "Expanded" ports are shown at correct Ys.
+        // I set the transforms on the group in the SVG. When placed, I will just move the group to targetPos coords.
+        // However, the port-groups have relative transforms.
+        // Let's assume the SVG structure for ports matches the TARGET layout (height 200).
+        // In BIN, we hide ports and just show a smaller box? 
+        // I will simply change the RECT height and move the group. 
+
+        function updatePortPositions(modId, isPlaced) {
+            const group = document.getElementById(modId);
+            const rect = group.querySelector('.module-box');
+            const label = group.querySelector('.module-label');
+            const sublabel = group.querySelector('.module-sublabel');
+
+            if (isPlaced) {
+                rect.setAttribute('height', '200');
+                // Move labels to bottom to avoid port overlap
+                label.setAttribute('y', '170');
+                sublabel.setAttribute('y', '190');
+            } else {
+                rect.setAttribute('height', '80');
+                // Center labels in the bin
+                label.setAttribute('y', '30');
+                sublabel.setAttribute('y', '50');
+            }
+        }
+
+
+
+        let selectedSource = null;
+        let dragElement = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        function init() {
+            renderCode();
+            setupInteractions();
+        }
+
+        function setupInteractions() {
+            // Drag Logic
+            const mods = document.querySelectorAll('.module-group');
+            mods.forEach(m => {
+                m.addEventListener('mousedown', startDrag);
+            });
+
+            const svg = document.getElementById('mainSvg');
+            svg.addEventListener('mousemove', drag);
+            svg.addEventListener('mouseup', endDrag);
+            svg.addEventListener('mouseleave', endDrag);
+
+            // Port Click Logic
+            document.querySelectorAll('.port-group').forEach(g => {
+                g.addEventListener('click', onPortClick);
+            });
+        }
+
+        // --- Drag & Drop ---
+        function startDrag(e) {
+            if (e.target.closest('.port-circle')) return; // Don't drag if clicking port
+            const group = e.currentTarget;
+            const id = group.id;
+
+            if (placements[id]) return; // Already placed, lock it?
+
+            dragElement = group;
+
+            // Get Mouse pos in SVG coords
+            const svg = document.getElementById('mainSvg');
+            const pt = getSVGPoint(e.clientX, e.clientY, svg);
+
+            // Get Group translation
+            const transform = dragElement.getAttribute('transform');
+            const parts = /translate\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)/.exec(transform);
+            const gx = parseFloat(parts[1]);
+            const gy = parseFloat(parts[2]);
+
+            dragOffset.x = pt.x - gx;
+            dragOffset.y = pt.y - gy;
+
+            // Bring to front
+            svg.appendChild(dragElement);
+        }
+
+        function drag(e) {
+            if (!dragElement) return;
+            e.preventDefault();
+            const svg = document.getElementById('mainSvg');
+            const pt = getSVGPoint(e.clientX, e.clientY, svg);
+            const nx = pt.x - dragOffset.x;
+            const ny = pt.y - dragOffset.y;
+            dragElement.setAttribute('transform', `translate(${nx}, ${ny})`);
+        }
+
+        function endDrag(e) {
+            if (!dragElement) return;
+            const id = dragElement.id;
+            const width = 140;
+            const height = 80;
+
+            // Check collision with Drop Zone
+            const targetId = dragElement.dataset.target;
+            const targetZone = document.getElementById(targetId);
+
+            // Current Pos
+            const transform = dragElement.getAttribute('transform');
+            const parts = /translate\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)/.exec(transform);
+            const currX = parseFloat(parts[1]);
+            const currY = parseFloat(parts[2]);
+
+            // Target Pos
+            const tPos = targetPos[id];
+
+            // Simple distance check to center
+            const dist = Math.hypot(currX - tPos.x, currY - tPos.y);
+
+            if (dist < 100) {
+                // SNAP
+                snapTo(dragElement, tPos.x, tPos.y);
+                placements[id] = true;
+                dragElement.classList.add('placed');
+                updatePortPositions(id, true);
+                showMsg(`Placed ${id.replace('mod_', '')}!`);
+            } else {
+                // RETURN TO BIN
+                const iPos = initialPos[id];
+                snapTo(dragElement, iPos.x, iPos.y);
+                placements[id] = false;
+            }
+
+            dragElement = null;
+            updateVisuals();
+        }
+
+        function snapTo(elem, x, y) {
+            elem.setAttribute('transform', `translate(${x}, ${y})`);
+        }
+
+        function getSVGPoint(x, y, svg) {
+            const point = svg.createSVGPoint();
+            point.x = x;
+            point.y = y;
+            return point.matrixTransform(svg.getScreenCTM().inverse());
+        }
+
+        // --- Wiring Logic ---
+        function onPortClick(e) {
+            e.stopPropagation();
+            const group = e.currentTarget;
+
+            // Check if parent module is placed
+            // The port is inside a .port-group inside a .module-group
+            // In CSS we allow pointer events on ports only when placed (kinda), 
+            // but let's reinforce logic.
+            const modGroup = group.parentElement;
+            if (!placements[modGroup.id]) return;
+
+            const id = group.dataset.id;
+            const type = group.dataset.type;
+
+            // Disconnect logic
+            if (type === 'sink') {
+                const src = sinkToSourceConfig[id];
+                if (connections[src] === id) {
+                    connections[src] = null;
+                    updateVisuals();
+                    showMsg('Disconnected.');
+                    return;
+                }
+            }
+
+            if (type === 'source') {
+                if (selectedSource === id) {
+                    selectedSource = null;
+                    showMsg('Selection cancelled.');
+                } else {
+                    selectedSource = id;
+                    showMsg(`Selected ${id}. Now click input.`);
+                }
+            } else if (type === 'sink') {
+                if (selectedSource) {
+                    if (validPairs[selectedSource] === id) {
+                        connections[selectedSource] = id;
+                        selectedSource = null;
+                        showMsg('Connected!');
+                    } else {
+                        showMsg('Invalid pair.', true);
+                    }
+                }
+            }
+            updateVisuals();
+        }
+
+        function updateVisuals() {
+            const wiresLayer = document.getElementById('wiresLayer');
+            wiresLayer.innerHTML = '';
+
+            // Clear selections
+            document.querySelectorAll('.port-circle').forEach(c => c.classList.remove('selected', 'connected', 'target-active'));
+
+            if (selectedSource) {
+                document.getElementById(`p_${selectedSource}`).classList.add('selected');
+                const target = validPairs[selectedSource];
+                // Only highlight if target module is placed
+                // find target module
+                // This is a bit tricky since we map port->port. 
+                // We assume users know where it is, or we find the parent.
+                if (!connections[selectedSource]) {
+                    const tEl = document.getElementById(`p_${target}`);
+                    if (tEl && tEl.closest('.module-group').classList.contains('placed')) {
+                        tEl.classList.add('target-active');
+                    }
+                }
+            }
+
+            Object.keys(connections).forEach(src => {
+                const dest = connections[src];
+                if (dest) {
+                    document.getElementById(`p_${src}`).classList.add('connected');
+                    document.getElementById(`p_${dest}`).classList.add('connected');
+                    drawWire(src, dest);
+                }
+            });
+
+            renderCode();
+        }
+
+        function drawWire(srcId, destId) {
+            // ... (Exact same draw wire logic as before, just ensuring IDs match)
+            const srcEl = document.getElementById(`p_${srcId}`);
+            const destEl = document.getElementById(`p_${destId}`);
+            const svg = document.getElementById('mainSvg');
+
+            const pt1 = getSVGPoint(srcEl.getBoundingClientRect().left + 6, srcEl.getBoundingClientRect().top + 6, svg);
+            const pt2 = getSVGPoint(destEl.getBoundingClientRect().left + 6, destEl.getBoundingClientRect().top + 6, svg);
+
+            const x1 = pt1.x, y1 = pt1.y, x2 = pt2.x, y2 = pt2.y;
+
+            const dist = Math.abs(x2 - x1);
+            const cp1x = x1 + dist * 0.5;
+            const cp1y = y1;
+            const cp2x = x2 - dist * 0.5;
+            const cp2y = y2;
+            const pathData = `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("d", pathData);
+            path.setAttribute("class", "wire-path connected");
+            path.setAttribute("marker-end", "url(#arrow-conn)");
+            document.getElementById('wiresLayer').appendChild(path);
+
+            // Label
+            const t = 0.5, mt = 1 - t;
+            const midX = (mt * mt * mt) * x1 + 3 * (mt * mt) * t * cp1x + 3 * mt * (t * t) * cp2x + (t * t * t) * x2;
+            const midY = (mt * mt * mt) * y1 + 3 * (mt * mt) * t * cp1y + 3 * mt * (t * t) * cp2y + (t * t * t) * y2;
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.setAttribute("x", midX);
+            label.setAttribute("y", midY - 6);
+            label.setAttribute("class", "wire-label");
+            label.textContent = wireNames[srcId] || 'wire';
+            document.getElementById('wiresLayer').appendChild(label);
+        }
+
+        function renderCode() {
+            const isConn = (key) => connections[key] !== null;
+
+            // Port Strings
+            const p_gen_data = isConn('gen_data') ? `.data_out(link_data)` : `.data_out( )`;
+            const p_gen_valid = isConn('gen_valid') ? `.valid_out(link_valid)` : `.valid_out( )`;
+
+            const p_filt_data = isConn('gen_data') ? `.data_in(link_data)` : `.data_in( )`;
+            const p_filt_valid = isConn('gen_valid') ? `.valid_in(link_valid)` : `.valid_in( )`;
+            const p_filt_res = isConn('filt_result') ? `.result(link_res)` : `.result( )`;
+
+            const p_disp_in = isConn('filt_result') ? `.pixel_in(link_res)` : `.pixel_in( )`;
+
+            // Blocks
+            const block_gen = placements['mod_u_gen'] ? `
+    <span class="code-comment">// 1. Generator Instance</span>
+    <span class="code-module">generator</span> u_gen (
+        .clk(clk),
+        .rst(rst),
+        <span class="${isConn('gen_data') ? 'code-connect' : 'code-missing'}">${p_gen_data}</span>,
+        <span class="${isConn('gen_valid') ? 'code-connect' : 'code-missing'}">${p_gen_valid}</span>
+    );` : `    <span class="code-placeholder">// TODO: Drag Generator here</span>`;
+
+            const block_filt = placements['mod_u_filt'] ? `
+    <span class="code-comment">// 2. Filter Instance</span>
+    <span class="code-module">filter</span> u_filt (
+        .clk(clk),
+        .rst(rst),
+        <span class="${isConn('gen_data') ? 'code-connect' : 'code-missing'}">${p_filt_data}</span>,
+        <span class="${isConn('gen_valid') ? 'code-connect' : 'code-missing'}">${p_filt_valid}</span>,
+        <span class="${isConn('filt_result') ? 'code-connect' : 'code-missing'}">${p_filt_res}</span>
+    );` : `    <span class="code-placeholder">// TODO: Drag Filter here</span>`;
+
+            const block_disp = placements['mod_u_disp'] ? `
+    <span class="code-comment">// 3. Display Instance</span>
+    <span class="code-module">display</span> u_disp (
+        .clk(clk),
+        <span class="${isConn('filt_result') ? 'code-connect' : 'code-missing'}">${p_disp_in}</span>
+    );` : `    <span class="code-placeholder">// TODO: Drag Display here</span>`;
+
+
+            const html = `
+<span class="code-keyword">module</span> <span class="code-module">system_top</span> (
+    <span class="code-keyword">input</span> <span class="code-wire">wire</span> clk,
+    <span class="code-keyword">input</span> <span class="code-wire">wire</span> rst
+);
+    <span class="code-comment">// Internal linking wires</span>
+    <span class="code-wire">wire</span> [7:0] link_data;
+    <span class="code-wire">wire</span>       link_valid;
+    <span class="code-wire">wire</span> [7:0] link_res;
+
+${block_gen}
+
+${block_filt}
+
+${block_disp}
+
+<span class="code-keyword">endmodule</span>
+`;
+            document.getElementById('codeContainer').innerHTML = html;
+        }
+
+        function showMsg(txt, error = false) {
+            const el = document.getElementById('msgBox');
+            el.textContent = txt;
+            el.style.color = error ? '#ff5252' : '#fff';
+        }
+
+        function resetAll() {
+            // Reset Placements to Bin
+            Object.keys(placements).forEach(k => {
+                placements[k] = false;
+                const iPos = initialPos[k];
+                snapTo(document.getElementById(k), iPos.x, iPos.y);
+                updatePortPositions(k, false);
+                document.getElementById(k).classList.remove('placed');
+            });
+
+            // Reset Connections
+            Object.keys(connections).forEach(k => connections[k] = null);
+            selectedSource = null;
+            updateVisuals();
+            showMsg("Reset system.");
+        }
+
+        init();
+
+    </script>
+</body>
+
+</html>

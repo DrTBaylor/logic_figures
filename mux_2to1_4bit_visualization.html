@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-Bit 2-to-1 Multiplexer Visualization</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            color: #4fc3f7;
+            font-size: 1.8em;
+            letter-spacing: 1px;
+        }
+
+        p.subtitle {
+            margin: 5px 0 0;
+            color: #90a4ae;
+            font-size: 1em;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            min-height: 0;
+        }
+
+        /* --- LEFT PANEL: DIAGRAM --- */
+        .diagram-panel {
+            flex: 6;
+            background: #0d1b2a;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel-header {
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid #546e7a;
+            color: #b0bec5;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        svg {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* SVG Styles */
+        .mux-body {
+            fill: #1a237e;
+            stroke: #5c6bc0;
+            stroke-width: 3;
+            filter: drop-shadow(0 0 5px rgba(26, 35, 126, 0.5));
+        }
+
+        .wire {
+            fill: none;
+            stroke: #37474f;
+            stroke-width: 6;
+            /* Thicker for bus */
+            stroke-linecap: round;
+            transition: stroke 0.3s ease;
+        }
+
+        .wire-sel {
+            stroke-width: 3;
+            /* Thin for 1-bit select */
+        }
+
+        .wire.active-bus {
+            stroke: #ffd54f;
+            /* Yellowish for data bus */
+            filter: drop-shadow(0 0 3px #ffd54f);
+        }
+
+        .wire.inactive-bus {
+            stroke: #37474f;
+            opacity: 0.5;
+        }
+
+        .wire.sel-0 {
+            stroke: #0277bd;
+        }
+
+        .wire.sel-1 {
+            stroke: #00e676;
+        }
+
+        .wire-path {
+            stroke-dasharray: 10 6;
+            animation: flow 1s linear infinite;
+            opacity: 0.8;
+            display: none;
+            stroke-width: 4;
+        }
+
+        @keyframes flow {
+            to {
+                stroke-dashoffset: -16;
+            }
+        }
+
+        .wire-path.showing {
+            display: block;
+        }
+
+        .toggle-switch {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .toggle-switch:hover {
+            transform: scale(1.1);
+        }
+
+        .switch-rect {
+            fill: #263238;
+            stroke: #78909c;
+            stroke-width: 2;
+        }
+
+        .switch-rect.sel-on {
+            fill: #00e676;
+            stroke: #fff;
+        }
+
+        .switch-rect.sel-off {
+            fill: #0277bd;
+            stroke: #fff;
+        }
+
+        .label-text {
+            fill: #eceff1;
+            font-family: monospace;
+            font-size: 14px;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .bus-slash {
+            stroke: #b0bec5;
+            stroke-width: 2;
+        }
+
+        .bus-label {
+            fill: #b0bec5;
+            font-size: 10px;
+            font-family: monospace;
+        }
+
+        .val-text {
+            fill: #fff;
+            font-weight: bold;
+            font-family: monospace;
+            pointer-events: none;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-size: 16px;
+        }
+
+        /* --- RIGHT PANEL: CODE --- */
+        .code-panel {
+            flex: 4;
+            background: #263238;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .code-content {
+            flex: 1;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #eceff1;
+            font-size: 16px;
+            line-height: 1.6;
+            overflow-y: auto;
+            white-space: pre;
+        }
+
+        /* Syntax Highlighting */
+        .kwd {
+            color: #ba68c8;
+            font-weight: bold;
+        }
+
+        .mod {
+            color: #4fc3f7;
+        }
+
+        .type {
+            color: #ffd54f;
+        }
+
+        .port {
+            color: #ff8a65;
+        }
+
+        .op {
+            color: #fff;
+        }
+
+        .comment {
+            color: #546e7a;
+            font-style: italic;
+        }
+
+        .highlight-line {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .active-logic {
+            background: rgba(255, 213, 79, 0.15);
+            /* Yellow tint */
+            border-left: 3px solid #ffd54f;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            color: #cfd8dc;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>4-Bit 2-to-1 Multiplexer</h1>
+        <p class="subtitle">Interactive Logic Visualization</p>
+    </div>
+
+    <div class="main-container">
+        <!-- DIAGRAM PANEL -->
+        <div class="diagram-panel">
+            <div class="panel-header">
+                <span>RTL Schematic</span>
+                <span style="font-size: 0.8em; color: #78909c;">Click inputs to cycle values (Hex)</span>
+            </div>
+
+            <svg id="mainSvg" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet">
+
+                <!-- MUX Symbol -->
+                <polygon points="250,80 350,110 350,290 250,320" class="mux-body" />
+                <text x="300" y="200" fill="white" text-anchor="middle" dominant-baseline="middle" font-weight="bold"
+                    font-size="20">MUX</text>
+                <text x="320" y="270" fill="#9fa8da" text-anchor="middle" font-size="12">2:1</text>
+
+                <!-- Helper for Bus Slash -->
+                <defs>
+                    <g id="slash">
+                        <line x1="-3" y1="5" x2="3" y2="-5" class="bus-slash" />
+                        <text x="5" y="-3" class="bus-label">4</text>
+                    </g>
+                </defs>
+
+                <!-- Wires -->
+                <!-- Input 0 (Top) -->
+                <line id="wire_i0" x1="100" y1="130" x2="250" y2="130" class="wire" />
+                <use href="#slash" x="175" y="130" />
+                <text x="240" y="120" fill="#b0bec5" font-size="12" text-anchor="end">i0[3:0]</text>
+
+                <!-- Input 1 (Bottom) -->
+                <line id="wire_i1" x1="100" y1="270" x2="250" y2="270" class="wire" />
+                <use href="#slash" x="175" y="270" />
+                <text x="240" y="260" fill="#b0bec5" font-size="12" text-anchor="end">i1[3:0]</text>
+
+                <!-- Select (Bottom/Mid) -->
+                <line id="wire_sel" x1="300" y1="360" x2="300" y2="305" class="wire wire-sel" />
+                <text x="310" y="320" fill="#b0bec5" font-size="12" text-anchor="start">sel</text>
+
+                <!-- Output -->
+                <line id="wire_y" x1="350" y1="200" x2="500" y2="200" class="wire" />
+                <use href="#slash" x="425" y="200" />
+                <text x="360" y="190" fill="#b0bec5" font-size="12" text-anchor="start">y[3:0]</text>
+
+                <!-- Internal Paths (Animated) -->
+                <path id="path_i0" d="M 250 130 C 280 130, 320 200, 350 200" class="wire active-bus wire-path"
+                    stroke-width="4" fill="none" />
+                <path id="path_i1" d="M 250 270 C 280 270, 320 200, 350 200" class="wire active-bus wire-path"
+                    stroke-width="4" fill="none" />
+
+                <!-- Interactivity Inputs (Hex Boxes) -->
+
+                <!-- Input i0 Hex -->
+                <g transform="translate(80, 130)">
+                    <g class="toggle-switch" onclick="cycleValue('i0')">
+                        <rect x="-25" y="-20" width="50" height="40" rx="4" class="switch-rect" stroke="#ffd54f" />
+                        <text x="0" y="2" class="val-text" id="txt_i0" fill="#ffd54f">0</text>
+                        <text x="0" y="-28" class="label-text">i0</text>
+                    </g>
+                </g>
+
+                <!-- Input i1 Hex -->
+                <g transform="translate(80, 270)">
+                    <g class="toggle-switch" onclick="cycleValue('i1')">
+                        <rect x="-25" y="-20" width="50" height="40" rx="4" class="switch-rect" stroke="#ffd54f" />
+                        <text x="0" y="2" class="val-text" id="txt_i1" fill="#ffd54f">1</text>
+                        <text x="0" y="-28" class="label-text">i1</text>
+                    </g>
+                </g>
+
+                <!-- Select Switch -->
+                <g transform="translate(300, 360)">
+                    <g class="toggle-switch" onclick="toggleSel()">
+                        <rect x="-20" y="-15" width="40" height="30" rx="4" class="switch-rect" id="sw_sel" />
+                        <text x="0" y="1" class="val-text" id="txt_sel">0</text>
+                        <text x="0" y="28" class="label-text">sel</text>
+                    </g>
+                </g>
+
+                <!-- Output Indicator -->
+                <g transform="translate(530, 200)">
+                    <rect x="-25" y="-20" width="50" height="40" rx="4" class="switch-rect" stroke="#ffd54f" />
+                    <text x="0" y="2" class="val-text" id="txt_y">0</text>
+                    <text x="0" y="-28" class="label-text">y</text>
+                </g>
+
+            </svg>
+
+            <div class="controls">
+                Status: <span id="statusText" style="color:#ffd54f">Waiting...</span>
+            </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="code-panel">
+            <div class="panel-header">Verilog Source</div>
+            <div class="code-content">
+                <span class="kwd">module</span> <span class="mod">mux_2to1_4bit</span> (
+                <span class="kwd">input</span> <span class="type">wire</span> [3:0] i0,
+                <span class="kwd">input</span> <span class="type">wire</span> [3:0] i1,
+                <span class="kwd">input</span> <span class="type">wire</span> sel,
+                <span class="kwd">output</span> <span class="type">wire</span> [3:0] y
+                );
+
+                <span class="comment">// Continuous Assignment (Bus Width 4)</span>
+                <span class="comment">// If sel is 1, y = i1 (4 bits)</span>
+                <span class="comment">// If sel is 0, y = i0 (4 bits)</span>
+
+                <div id="code_assign" class="highlight-line" style="padding: 2px 5px;">
+                    <span class="kwd">assign</span> y = sel ? i1 : i0;
+                </div>
+
+                <span class="kwd">endmodule</span>
+            </div>
+
+            <div style="padding: 20px; border-top: 1px solid #546e7a;">
+                <h4 style="margin: 0 0 10px 0; color: #b0bec5;">Logic Analysis</h4>
+                <div id="logicExplanation" style="font-size: 0.9em; color: #90a4ae;">
+                    Current state explanation...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        const state = {
+            i0: 0xA, // Init with example hex A (10)
+            i1: 0x5, // Init with example hex 5
+            sel: 0,
+            y: 0
+        };
+
+        function cycleValue(key) {
+            // Cycle 0 -> 15 -> 0
+            state[key] = (state[key] + 1) % 16;
+            update();
+        }
+
+        function toggleSel() {
+            state.sel = state.sel === 0 ? 1 : 0;
+            update();
+        }
+
+        function update() {
+            // Logic
+            state.y = state.sel === 1 ? state.i1 : state.i0;
+
+            // Update UI Texts (Hex)
+            document.getElementById('txt_i0').textContent = state.i0.toString(16).toUpperCase();
+            document.getElementById('txt_i1').textContent = state.i1.toString(16).toUpperCase();
+            document.getElementById('txt_sel').textContent = state.sel;
+            document.getElementById('txt_y').textContent = state.y.toString(16).toUpperCase();
+
+            // Select Switch Color
+            const swSel = document.getElementById('sw_sel');
+            if (state.sel === 1) {
+                swSel.classList.remove('sel-off');
+                swSel.classList.add('sel-on');
+            } else {
+                swSel.classList.remove('sel-on');
+                swSel.classList.add('sel-off');
+            }
+
+            // Wire Colors
+            // Selected path gets high opacity/brighter color
+            const pathI0 = document.getElementById('path_i0');
+            const pathI1 = document.getElementById('path_i1');
+            const wireI0 = document.getElementById('wire_i0');
+            const wireI1 = document.getElementById('wire_i1');
+            const wireSel = document.getElementById('wire_sel');
+            const wireY = document.getElementById('wire_y');
+
+            wireSel.setAttribute('class', `wire wire-sel ${state.sel === 1 ? 'sel-1' : 'sel-0'}`);
+            wireY.setAttribute('class', 'wire active-bus'); // Output always active driven
+
+            if (state.sel === 0) {
+                // i0 path active
+                pathI0.style.display = 'block';
+                pathI1.style.display = 'none';
+                pathI0.setAttribute('stroke', '#ffd54f');
+
+                wireI0.setAttribute('class', 'wire active-bus');
+                wireI1.setAttribute('class', 'wire inactive-bus');
+
+                updateStatus(`Select is 0. <b>i0 (0x${state.i0.toString(16).toUpperCase()})</b> is passed to <b>y</b>.`);
+            } else {
+                // i1 path active
+                pathI0.style.display = 'none';
+                pathI1.style.display = 'block';
+                pathI1.setAttribute('stroke', '#ffd54f');
+
+                wireI0.setAttribute('class', 'wire inactive-bus');
+                wireI1.setAttribute('class', 'wire active-bus');
+
+                updateStatus(`Select is 1. <b>i1 (0x${state.i1.toString(16).toUpperCase()})</b> is passed to <b>y</b>.`);
+            }
+
+            // Code Highlight
+            const codeBlock = document.getElementById('code_assign');
+            codeBlock.classList.add('active-logic');
+
+            // Logic Text
+            const logicDiv = document.getElementById('logicExplanation');
+            logicDiv.innerHTML = `
+                <code>sel == ${state.sel}</code><br>
+                Selected Path: <code>i${state.sel}</code> &rarr; <code>y</code><br>
+                Value: <code>0x${state.y.toString(16).toUpperCase()}</code> (Binary: <code>${state.y.toString(2).padStart(4, '0')}</code>)
+            `;
+        }
+
+        // Init
+        update();
+    </script>
+</body>
+
+</html>

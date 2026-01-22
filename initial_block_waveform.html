@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initial Block Waveform: Parametric Delays</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #0a192f 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 12px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 1.4em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin: 2px 0 10px 0;
+            font-size: 0.95em;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1.8fr;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel {
+            background: #0d1b2a;
+            border: 1px solid #546e7a;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            color: #cfd8dc;
+            margin-bottom: 8px;
+        }
+
+        pre {
+            background: #0a1524;
+            border: 1px solid #37474f;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 0 0 8px 0;
+            color: #c5cae9;
+            font-size: 0.95em;
+            line-height: 1.35;
+            flex: 1;
+            overflow: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: #cfd8dc;
+            font-size: 0.9em;
+        }
+
+        input {
+            background: #0a1524;
+            color: #e0e0e0;
+            border: 1px solid #546e7a;
+            border-radius: 6px;
+            padding: 6px 8px;
+        }
+
+        button {
+            background: #1a237e;
+            color: #fff;
+            border: 1px solid #5c6bc0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.2);
+            margin-top: 4px;
+        }
+
+        button:hover {
+            border-color: #4fc3f7;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .wave-container {
+            position: relative;
+            flex: 1;
+            min-height: 320px;
+        }
+
+        svg.wave {
+            width: 100%;
+            height: 100%;
+            background: #0a1524;
+            border: 1px solid #37474f;
+            border-radius: 10px;
+        }
+
+        .sig-label {
+            fill: #cfd8dc;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .sig-path {
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .strip {
+            height: 30px;
+            rx: 6;
+        }
+
+        .strip-text {
+            fill: #0d1b2a;
+            font-weight: 700;
+        }
+
+        .time-mark {
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 1;
+        }
+
+        .note {
+            color: #90a4ae;
+            font-size: 0.9em;
+            line-height: 1.35;
+            margin-top: 6px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #546e7a;
+            background: rgba(84, 110, 122, 0.18);
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h1>Initial Block Signals with Parametric Delays</h1>
+        <div class="subtitle">Adjust delays and clock half-period; see the resulting signal timeline.</div>
+    </div>
+
+    <div class="layout">
+        <div class="panel">
+            <div class="panel-title">Verilog (auto-filled from your inputs)</div>
+            <pre id="codeBlock"></pre>
+            <div class="controls">
+                <label>Clock half-period (#)
+                    <input id="clkHalf" type="number" value="5" min="1">
+                </label>
+                <label>Initial code (sequential #delay assignments)
+                    <textarea id="userCode" rows="6"
+                        style="resize: vertical; min-height: 120px; background:#0a1524; color:#e0e0e0; border:1px solid #546e7a; border-radius:8px; padding:8px; font-family:'Courier New', monospace;">#5  vec  = 4'hA;
+#5  sigA = 1;
+#8  vec  = 4'h3;
+#6  sigB = 0;</textarea>
+                </label>
+            </div>
+            <button id="runBtn">Run with this code</button>
+            <div class="note">Enter simple <code>#delay signal = value;</code> lines inside the initial block. Each
+                delay is relative to the previous statement (just like Verilog). Signals: <code>vec</code> (4-bit),
+                <code>sigA</code>, <code>sigB</code>. Clock is driven separately by the half-period above.</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Timing diagram (step waveform)</div>
+            <div class="wave-container">
+                <svg id="waveSvg" class="wave"></svg>
+            </div>
+            <div class="note">Clock toggles every half-period; other signals update at their scheduled #delays. The
+                diagram shows step waveforms over time.</div>
+        </div>
+    </div>
+
+    <script>
+        const codeBlock = document.getElementById('codeBlock');
+        const waveSvg = document.getElementById('waveSvg');
+        const clkHalfEl = document.getElementById('clkHalf');
+        const userCodeEl = document.getElementById('userCode');
+        const runBtn = document.getElementById('runBtn');
+
+        function buildCode(params) {
+            const { clkHalf, userLines, finishTime } = params;
+            return [
+                "module tb;",
+                "  reg        clk;",
+                "  reg  [3:0] vec;",
+                "  reg        sigA;",
+                "  reg        sigB;",
+                "",
+                "  // Clock",
+                `  initial clk = 0;`,
+                `  always #${clkHalf} clk = ~clk;`,
+                "",
+                "  // Stimulus",
+                "  initial begin",
+                "    vec  = 4'h0; sigA = 0; sigB = 1;",
+                ...userLines.map(l => "    " + l),
+                `    #${finishTime} $finish;`,
+                "  end",
+                "",
+                "endmodule"
+            ].join("\n");
+        }
+
+        function parseUserCode(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const events = [];
+            let t = 0;
+            const allowed = new Set(['vec', 'sigA', 'sigB']);
+            const regex = /^#\s*(\d+)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+);$/;
+            lines.forEach(line => {
+                const m = line.match(regex);
+                if (!m) return;
+                const delay = Number(m[1]);
+                const sig = m[2];
+                const val = m[3].trim();
+                if (!allowed.has(sig)) return;
+                t += delay;
+                events.push({ time: t, changes: { [sig]: `set:${val}` } });
+            });
+            return { events, lastTime: t };
+        }
+
+        function isBitSignal(sig) {
+            return sig === 'clk' || sig === 'sigA' || sig === 'sigB';
+        }
+
+        function parseBitVal(val) {
+            const m = val.match(/^(?:1'b)?([01])$/);
+            if (m) return Number(m[1]);
+            return val === '1' ? 1 : 0;
+        }
+
+        function simulate(params, userEvents) {
+            const { clkHalf, finishTime } = params;
+            const events = [];
+            let t = 0;
+            const pushEvent = (time, changes) => events.push({ time, changes });
+
+            // initial values at t=0
+            pushEvent(0, { clk: 'set:0', vec: "set:0", sigA: "set:0", sigB: "set:1" });
+            userEvents.forEach(ev => pushEvent(ev.time, ev.changes));
+            const lastUserTime = userEvents.length ? userEvents[userEvents.length - 1].time : 0;
+            pushEvent(lastUserTime + finishTime, { finish: true });
+
+            // clock toggles
+            const maxTime = Math.max(...events.map(e => e.time)) + clkHalf * 2;
+            for (let c = clkHalf; c <= maxTime; c += clkHalf) {
+                pushEvent(c, { clk: "toggle" });
+            }
+
+            // consolidate by time
+            const times = [...new Set(events.map(e => e.time))].sort((a, b) => a - b);
+            const timeline = [];
+            let state = { clk: 0, vec: "0", sigA: 0, sigB: 1 };
+            times.forEach(time => {
+                const atTime = events.filter(e => e.time === time);
+                atTime.forEach(ev => {
+                    Object.entries(ev.changes).forEach(([sig, action]) => {
+                        if (sig === 'finish') return;
+                        if (action === 'toggle') {
+                            state[sig] = state[sig] ? 0 : 1;
+                        } else if (action.startsWith('set:')) {
+                            const v = action.split(':')[1];
+                            if (isBitSignal(sig)) {
+                                state[sig] = parseBitVal(v);
+                            } else {
+                                state[sig] = v;
+                            }
+                        }
+                    });
+                });
+                timeline.push({
+                    time,
+                    clk: state.clk,
+                    vec: state.vec,
+                    sigA: state.sigA,
+                    sigB: state.sigB
+                });
+            });
+            return timeline;
+        }
+
+        function level(val, yMid, amp) {
+            return val ? yMid - amp : yMid + amp;
+        }
+
+        function renderWaveform(data) {
+            waveSvg.innerHTML = '';
+            if (!data.length) return;
+            const scaleX = 20;
+            const maxTime = data[data.length - 1].time + 5;
+            const width = maxTime * scaleX + 40;
+            const sigs = [
+                { name: 'clk', color: '#4fc3f7', y: 60 },
+                { name: 'vec', color: '#ffca28', y: 160 },
+                { name: 'sigA', color: '#66bb6a', y: 260 },
+                { name: 'sigB', color: '#ef5350', y: 340 }
+            ];
+            waveSvg.setAttribute('viewBox', `0 0 ${width} 400`);
+
+            // time grid
+            for (let t = 0; t <= maxTime; t += Math.max(1, Math.floor(maxTime / 10))) {
+                const x = t * scaleX;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', 20);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', 360);
+                line.setAttribute('class', 'time-mark');
+                waveSvg.appendChild(line);
+
+                const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                tx.setAttribute('x', x + 2);
+                tx.setAttribute('y', 16);
+                tx.setAttribute('class', 'sig-label');
+                tx.textContent = t;
+                waveSvg.appendChild(tx);
+            }
+
+            sigs.forEach(sig => {
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('x', 0);
+                label.setAttribute('y', sig.y - 12);
+                label.setAttribute('class', 'sig-label');
+                label.textContent = sig.name;
+                waveSvg.appendChild(label);
+
+                // build segments only when this signal changes
+                const segments = [];
+                let start = 0;
+                let currVal = data[0][sig.name];
+                for (let i = 1; i < data.length; i++) {
+                    const nextVal = data[i][sig.name];
+                    if (nextVal !== currVal) {
+                        segments.push({ start, end: data[i].time, val: currVal });
+                        start = data[i].time;
+                        currVal = nextVal;
+                    }
+                }
+                segments.push({ start, end: maxTime, val: currVal });
+
+                segments.forEach(seg => {
+                    const x = seg.start * scaleX;
+                    const w = Math.max(6, (seg.end - seg.start) * scaleX);
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', x);
+                    rect.setAttribute('y', sig.y - 20);
+                    rect.setAttribute('width', w);
+                    rect.setAttribute('height', 40);
+                    rect.setAttribute('rx', 8);
+                    rect.setAttribute('class', 'strip');
+                    let fill = sig.color;
+                    if (sig.name !== 'vec') {
+                        fill = seg.val ? sig.color : '#455a64';
+                    }
+                    rect.setAttribute('fill', fill);
+                    rect.setAttribute('stroke', sig.color);
+                    waveSvg.appendChild(rect);
+
+                    const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    tx.setAttribute('x', x + 6);
+                    tx.setAttribute('y', sig.y + 5);
+                    tx.setAttribute('class', 'sig-label');
+                    const textColor = (sig.name === 'vec') ? '#0d1b2a' : (seg.val ? '#0d1b2a' : '#cfd8dc');
+                    tx.setAttribute('fill', textColor);
+                    tx.textContent = `${seg.val}`;
+                    waveSvg.appendChild(tx);
+                });
+            });
+        }
+
+        function run() {
+            const clkHalf = Number(clkHalfEl.value) || 1;
+            const parsed = parseUserCode(userCodeEl.value);
+            const finishTime = 10;
+            const params = {
+                clkHalf,
+                userLines: userCodeEl.value.split(/\r?\n/).filter(Boolean),
+                finishTime
+            };
+            codeBlock.textContent = buildCode(params);
+            const timeline = simulate(params, parsed.events);
+            renderWaveform(timeline);
+        }
+
+        runBtn.addEventListener('click', run);
+        run();
+    </script>
+</body>
+
+</html>

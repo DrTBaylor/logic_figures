@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verilog Simulation Time Ticks</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #0a192f 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 12px;
+            color: #e0e0e0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 1.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin: 4px 0 12px 0;
+            font-size: 0.95em;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            background: #0d1b2a;
+            border: 1px solid #546e7a;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: #1a237e;
+            color: #fff;
+            border: 1px solid #5c6bc0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.2);
+        }
+
+        button:hover {
+            border-color: #4fc3f7;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .secondary {
+            background: #10263d;
+            border-color: #546e7a;
+            color: #c5cae9;
+            box-shadow: none;
+        }
+
+        .status-text {
+            color: #cfd8dc;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        .main {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .timeline-panel {
+            flex: 2;
+            background: #0d1b2a;
+            border-radius: 12px;
+            border: 2px solid #546e7a;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            color: #cfd8dc;
+            margin-bottom: 8px;
+        }
+
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .tick-card {
+            background: radial-gradient(circle at 20% 20%, rgba(79, 195, 247, 0.08), rgba(13, 27, 42, 0.9));
+            border: 1px solid #546e7a;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 170px;
+        }
+
+        .tick-card.active {
+            border-color: #4fc3f7;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.3);
+        }
+
+        .tick-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tick-title {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .tag {
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .tag-edge {
+            background: rgba(79, 195, 247, 0.15);
+            color: #4fc3f7;
+            border: 1px solid rgba(79, 195, 247, 0.4);
+        }
+
+        .tag-idle {
+            background: rgba(144, 164, 174, 0.18);
+            color: #cfd8dc;
+            border: 1px solid rgba(144, 164, 174, 0.35);
+        }
+
+        .row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .label {
+            color: #90a4ae;
+            min-width: 60px;
+            font-weight: 700;
+        }
+
+        .values {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            background: rgba(84, 110, 122, 0.2);
+            border: 1px solid rgba(84, 110, 122, 0.35);
+            color: #e0e0e0;
+        }
+
+        .pill.high {
+            background: rgba(76, 175, 80, 0.12);
+            border-color: rgba(76, 175, 80, 0.45);
+            color: #9cffb2;
+        }
+
+        .pill.low {
+            background: rgba(239, 83, 80, 0.12);
+            border-color: rgba(239, 83, 80, 0.45);
+            color: #ffb3b0;
+        }
+
+        .list {
+            margin: 0;
+            padding-left: 16px;
+            color: #cfd8dc;
+            font-size: 0.9em;
+        }
+
+        .side-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 260px;
+        }
+
+        .card {
+            background: #0d1b2a;
+            border: 1px solid #546e7a;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        pre {
+            background: #0a1524;
+            color: #c5cae9;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 0;
+            border: 1px solid #37474f;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #546e7a;
+        }
+
+        .dot.high {
+            background: #2e7d32;
+            border-color: #66bb6a;
+        }
+
+        .dot.low {
+            background: #b71c1c;
+            border-color: #ef5350;
+        }
+
+        .signal-bar {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .signal-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #546e7a;
+            background: rgba(84, 110, 122, 0.18);
+            font-family: 'Courier New', monospace;
+        }
+
+        .note {
+            color: #b0bec5;
+            font-size: 0.9em;
+            line-height: 1.35;
+        }
+
+        .accent {
+            color: #4fc3f7;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div>
+            <h1>Verilog Simulation: Time Ticks & Scheduled Updates</h1>
+            <div class="subtitle">Each tick: processes read the current signals, schedule assignments, then values change together at the end of the tick.</div>
+        </div>
+
+        <div class="controls">
+            <div class="button-group">
+                <button id="playPause">Play</button>
+                <button id="step">Next tick</button>
+                <button id="reset" class="secondary">Reset</button>
+            </div>
+            <div class="button-group">
+                <button id="toggleReq">Toggle req before next tick</button>
+                <button id="injectPulse" class="secondary">Pulse req high once</button>
+            </div>
+            <div class="status-text" id="statusText">Tick 0 | clk=0 req=0 ack=0 | pending: none</div>
+        </div>
+
+        <div class="main">
+            <div class="timeline-panel">
+                <div class="panel-title">Time axis (latest tick glows)</div>
+                <div id="timeline" class="timeline"></div>
+            </div>
+
+            <div class="side-panel">
+                <div class="card">
+                    <div class="panel-title">Process being simulated</div>
+                    <pre>always @(posedge clk) begin
+  ack <= req;          // sample request on the rising edge
+end</pre>
+                    <div class="panel-title">Current signals</div>
+                    <div id="currentSignals" class="signal-bar"></div>
+                    <div class="note">
+                        Processes <span class="accent">see the values that exist at the start of the tick</span>.
+                        Any assignments they make land together at the end of that same tick.
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="panel-title">Reading this diagram</div>
+                    <div class="legend-item"><span class="dot high"></span><span>1 / asserted</span></div>
+                    <div class="legend-item"><span class="dot low"></span><span>0 / deasserted</span></div>
+                    <div class="note">Use <b>Next tick</b> or <b>Play</b> to move time forward.
+                        You can queue an external change to <code>req</code> before the next tick.
+                        The simulator will: <b>read</b> signals → <b>run the process</b> → <b>apply scheduled updates</b>.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const timelineEl = document.getElementById('timeline');
+        const playPauseBtn = document.getElementById('playPause');
+        const stepBtn = document.getElementById('step');
+        const resetBtn = document.getElementById('reset');
+        const toggleReqBtn = document.getElementById('toggleReq');
+        const injectPulseBtn = document.getElementById('injectPulse');
+        const statusText = document.getElementById('statusText');
+        const currentSignalsEl = document.getElementById('currentSignals');
+
+        let timer = null;
+        const maxTicks = 8;
+
+        const state = {
+            time: 0,
+            signals: { clk: 0, req: 0, ack: 0 },
+            pendingToggle: false,
+            pendingPulse: false,
+            history: []
+        };
+
+        function renderSignals(container, values) {
+            container.innerHTML = '';
+            Object.entries(values).forEach(([name, val]) => {
+                const chip = document.createElement('div');
+                chip.className = 'signal-chip';
+                const dot = document.createElement('span');
+                dot.className = `dot ${val ? 'high' : 'low'}`;
+                const text = document.createElement('span');
+                text.textContent = `${name}=${val}`;
+                chip.appendChild(dot);
+                chip.appendChild(text);
+                container.appendChild(chip);
+            });
+        }
+
+        function formatPill(name, val) {
+            const span = document.createElement('span');
+            span.className = `pill ${val ? 'high' : 'low'}`;
+            span.textContent = `${name}:${val}`;
+            return span;
+        }
+
+        function renderTimeline() {
+            timelineEl.innerHTML = '';
+            const latestTick = state.history.length ? state.history[state.history.length - 1].tick : -1;
+            state.history.forEach(entry => {
+                const card = document.createElement('div');
+                card.className = 'tick-card' + (entry.tick === latestTick ? ' active' : '');
+
+                const header = document.createElement('div');
+                header.className = 'tick-header';
+
+                const title = document.createElement('div');
+                title.className = 'tick-title';
+                title.textContent = `Tick ${entry.tick}`;
+
+                const tag = document.createElement('div');
+                tag.className = 'tag ' + (entry.rising ? 'tag-edge' : 'tag-idle');
+                tag.textContent = entry.rising ? 'posedge clk' : 'no edge';
+
+                header.appendChild(title);
+                header.appendChild(tag);
+                card.appendChild(header);
+
+                const seenRow = document.createElement('div');
+                seenRow.className = 'row';
+                const seenLabel = document.createElement('div');
+                seenLabel.className = 'label';
+                seenLabel.textContent = 'Seen';
+                const seenValues = document.createElement('div');
+                seenValues.className = 'values';
+                Object.entries(entry.seen).forEach(([k, v]) => {
+                    seenValues.appendChild(formatPill(k, v));
+                });
+                seenRow.appendChild(seenLabel);
+                seenRow.appendChild(seenValues);
+                card.appendChild(seenRow);
+
+                const processRow = document.createElement('div');
+                processRow.className = 'row';
+                const processLabel = document.createElement('div');
+                processLabel.className = 'label';
+                processLabel.textContent = 'Process';
+                const processText = document.createElement('div');
+                processText.className = 'values';
+                processText.textContent = entry.processNote;
+                processRow.appendChild(processLabel);
+                processRow.appendChild(processText);
+                card.appendChild(processRow);
+
+                const scheduledRow = document.createElement('div');
+                scheduledRow.className = 'row';
+                const schedLabel = document.createElement('div');
+                schedLabel.className = 'label';
+                schedLabel.textContent = 'Scheduled';
+                const schedValues = document.createElement('div');
+                schedValues.className = 'values';
+                if (entry.scheduled.length === 0) {
+                    schedValues.textContent = 'No assignments';
+                } else {
+                    entry.scheduled.forEach(item => {
+                        const pill = document.createElement('span');
+                        pill.className = 'pill';
+                        pill.textContent = item;
+                        schedValues.appendChild(pill);
+                    });
+                }
+                scheduledRow.appendChild(schedLabel);
+                scheduledRow.appendChild(schedValues);
+                card.appendChild(scheduledRow);
+
+                const commitRow = document.createElement('div');
+                commitRow.className = 'row';
+                const commitLabel = document.createElement('div');
+                commitLabel.className = 'label';
+                commitLabel.textContent = 'Commit';
+                const commitValues = document.createElement('div');
+                commitValues.className = 'values';
+                Object.entries(entry.committed).forEach(([k, v]) => {
+                    commitValues.appendChild(formatPill(k, v));
+                });
+                commitRow.appendChild(commitLabel);
+                commitRow.appendChild(commitValues);
+                card.appendChild(commitRow);
+
+                if (entry.externalNotes.length > 0) {
+                    const noteRow = document.createElement('div');
+                    noteRow.className = 'row';
+                    const noteLabel = document.createElement('div');
+                    noteLabel.className = 'label';
+                    noteLabel.textContent = 'External';
+                    const list = document.createElement('ul');
+                    list.className = 'list';
+                    entry.externalNotes.forEach(n => {
+                        const li = document.createElement('li');
+                        li.textContent = n;
+                        list.appendChild(li);
+                    });
+                    noteRow.appendChild(noteLabel);
+                    noteRow.appendChild(list);
+                    card.appendChild(noteRow);
+                }
+
+                timelineEl.appendChild(card);
+            });
+        }
+
+        function updateStatus() {
+            const pending = [];
+            if (state.pendingToggle) pending.push('toggle req');
+            if (state.pendingPulse) pending.push('pulse req high');
+            statusText.textContent = `Next tick ${state.time} | clk=${state.signals.clk} req=${state.signals.req} ack=${state.signals.ack} | pending: ${pending.length ? pending.join(', ') : 'none'}`;
+            renderSignals(currentSignalsEl, state.signals);
+        }
+
+        function pushHistory(entry) {
+            state.history.push(entry);
+            if (state.history.length > maxTicks) {
+                state.history.shift();
+            }
+        }
+
+        function stepSimulation() {
+            const externalNotes = [];
+
+            // Apply queued external changes before the process runs.
+            if (state.pendingToggle) {
+                state.signals.req = state.signals.req ? 0 : 1;
+                externalNotes.push(`env toggled req -> ${state.signals.req}`);
+                state.pendingToggle = false;
+            }
+
+            if (state.pendingPulse) {
+                state.signals.req = 1;
+                externalNotes.push('env pulsed req high');
+                state.pendingPulse = false;
+            }
+
+            const prevClk = state.signals.clk;
+            state.signals.clk = prevClk ? 0 : 1;
+            const rising = prevClk === 0 && state.signals.clk === 1;
+
+            const seen = { ...state.signals };
+            const scheduled = [];
+            const assignments = {};
+            let processNote = 'No posedge, process idles.';
+
+            if (rising) {
+                assignments.ack = seen.req;
+                scheduled.push(`ack <= ${seen.req}`);
+                processNote = `posedge clk → ack samples req (${seen.req})`;
+            }
+
+            Object.entries(assignments).forEach(([sig, val]) => {
+                state.signals[sig] = val;
+            });
+
+            const committed = { ...state.signals };
+
+            pushHistory({
+                tick: state.time,
+                rising,
+                seen,
+                scheduled,
+                committed,
+                processNote,
+                externalNotes
+            });
+
+            state.time += 1;
+            renderTimeline();
+            updateStatus();
+        }
+
+        function resetSimulation() {
+            state.time = 1;
+            state.signals = { clk: 0, req: 0, ack: 0 };
+            state.pendingToggle = false;
+            state.pendingPulse = false;
+            state.history = [{
+                tick: 0,
+                rising: false,
+                seen: { ...state.signals },
+                scheduled: [],
+                committed: { ...state.signals },
+                processNote: 'Initial conditions; simulator waiting for the first tick.',
+                externalNotes: []
+            }];
+            renderTimeline();
+            updateStatus();
+        }
+
+        function togglePlay() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+                playPauseBtn.textContent = 'Play';
+            } else {
+                stepSimulation();
+                timer = setInterval(stepSimulation, 1200);
+                playPauseBtn.textContent = 'Pause';
+            }
+        }
+
+        playPauseBtn.addEventListener('click', togglePlay);
+        stepBtn.addEventListener('click', () => {
+            if (timer) togglePlay();
+            stepSimulation();
+        });
+        resetBtn.addEventListener('click', () => {
+            if (timer) togglePlay();
+            resetSimulation();
+        });
+        toggleReqBtn.addEventListener('click', () => {
+            state.pendingToggle = true;
+            updateStatus();
+        });
+        injectPulseBtn.addEventListener('click', () => {
+            state.pendingPulse = true;
+            updateStatus();
+        });
+
+        resetSimulation();
+    </script>
+</body>
+
+</html>

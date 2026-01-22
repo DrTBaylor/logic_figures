@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompting Strategies: Then & Now</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(135deg, #0a0a0f 0%, #0d1420 50%, #0a0f18 100%);
+            color: #e8e8ed;
+            padding: 45px 55px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .header h1 {
+            font-size: 40px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #f6ad55, #ffffff, #68d391);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            font-size: 18px;
+            font-weight: 300;
+            color: #8888a0;
+        }
+
+        .header .subtitle em {
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        .header .subtitle .then { color: #f6ad55; }
+        .header .subtitle .now { color: #68d391; }
+
+        /* Main layout */
+        .main-content {
+            display: flex;
+            gap: 40px;
+            height: 880px;
+        }
+
+        /* Strategy cards grid */
+        .strategies-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            width: 820px;
+            flex-shrink: 0;
+        }
+
+        .strategy-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .strategy-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            opacity: 0.7;
+        }
+
+        .strategy-card:hover {
+            background: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.15);
+            transform: translateY(-2px);
+        }
+
+        .strategy-card.highlighted {
+            border-width: 2px;
+            transform: translateY(-4px);
+        }
+
+        /* Card color themes */
+        .strategy-card.zero-shot::before { background: linear-gradient(90deg, #63b3ed, #4299e1); }
+        .strategy-card.zero-shot.highlighted { border-color: #63b3ed; box-shadow: 0 0 30px rgba(99,179,237,0.2); }
+
+        .strategy-card.few-shot::before { background: linear-gradient(90deg, #f6ad55, #ed8936); }
+        .strategy-card.few-shot.highlighted { border-color: #f6ad55; box-shadow: 0 0 30px rgba(246,173,85,0.2); }
+
+        .strategy-card.chain-of-thought::before { background: linear-gradient(90deg, #b794f4, #9f7aea); }
+        .strategy-card.chain-of-thought.highlighted { border-color: #b794f4; box-shadow: 0 0 30px rgba(183,148,244,0.2); }
+
+        .strategy-card.role-persona::before { background: linear-gradient(90deg, #68d391, #48bb78); }
+        .strategy-card.role-persona.highlighted { border-color: #68d391; box-shadow: 0 0 30px rgba(104,211,145,0.2); }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .zero-shot .card-icon { background: rgba(99,179,237,0.15); color: #63b3ed; }
+        .few-shot .card-icon { background: rgba(246,173,85,0.15); color: #f6ad55; }
+        .chain-of-thought .card-icon { background: rgba(183,148,244,0.15); color: #b794f4; }
+        .role-persona .card-icon { background: rgba(104,211,145,0.15); color: #68d391; }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .zero-shot .card-title { color: #63b3ed; }
+        .few-shot .card-title { color: #f6ad55; }
+        .chain-of-thought .card-title { color: #b794f4; }
+        .role-persona .card-title { color: #68d391; }
+
+        .card-era {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666680;
+            margin-top: 2px;
+        }
+
+        .card-description {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #a0a0b0;
+            margin-bottom: 16px;
+            flex: 1;
+        }
+
+        .card-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.evolved { background: #68d391; }
+        .status-indicator.foundation { background: #f6ad55; }
+
+        .status-text {
+            font-size: 12px;
+            color: #888898;
+        }
+
+        .status-text strong {
+            color: #c0c0d0;
+        }
+
+        /* Detail panel */
+        .detail-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #666680;
+            margin-bottom: 16px;
+        }
+
+        .detail-card {
+            flex: 1;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .detail-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .detail-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .detail-header h3 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* Timeline comparison */
+        .timeline-compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-box {
+            padding: 18px;
+            border-radius: 12px;
+        }
+
+        .timeline-box.then {
+            background: rgba(246,173,85,0.08);
+            border-left: 3px solid rgba(246,173,85,0.5);
+        }
+
+        .timeline-box.now {
+            background: rgba(104,211,145,0.08);
+            border-left: 3px solid rgba(104,211,145,0.5);
+        }
+
+        .timeline-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 10px;
+        }
+
+        .timeline-box.then .timeline-label { color: #f6ad55; }
+        .timeline-box.now .timeline-label { color: #68d391; }
+
+        .timeline-box p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #c8c8d8;
+        }
+
+        /* Principle box */
+        .principle-box {
+            background: rgba(168,208,255,0.08);
+            border: 1px solid rgba(168,208,255,0.2);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .principle-box h4 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #a8d0ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .principle-box h4 svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .principle-box p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #d8d8e8;
+            font-weight: 400;
+        }
+
+        /* When to use */
+        .when-section {
+            margin-top: auto;
+        }
+
+        .when-section h4 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #888898;
+            margin-bottom: 12px;
+        }
+
+        .when-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .when-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+        }
+
+        .when-item.yes {
+            border-left: 3px solid rgba(104,211,145,0.5);
+        }
+
+        .when-item.no {
+            border-left: 3px solid rgba(252,129,129,0.5);
+        }
+
+        .when-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .when-item.yes .when-icon { background: rgba(104,211,145,0.2); color: #68d391; }
+        .when-item.no .when-icon { background: rgba(252,129,129,0.2); color: #fc8181; }
+
+        .when-icon svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .when-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #b0b0c0;
+        }
+
+        /* Default state */
+        .default-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #666680;
+        }
+
+        .default-content svg {
+            width: 56px;
+            height: 56px;
+            margin-bottom: 20px;
+            opacity: 0.4;
+        }
+
+        .default-content p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Key insight banner */
+        .insight-banner {
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: linear-gradient(90deg, rgba(246,173,85,0.1) 0%, rgba(104,211,145,0.1) 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .insight-icon svg {
+            width: 20px;
+            height: 20px;
+            color: #a8d0ff;
+        }
+
+        .insight-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #b8b8c8;
+        }
+
+        .insight-text strong {
+            color: #e8e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <header class="header">
+                <h1>Prompting Strategies: Then & Now</h1>
+                <p class="subtitle">Classic techniques evolved—the <em class="then">principles persist</em>, the <em class="now">application adapts</em></p>
+            </header>
+
+            <div class="main-content">
+                
+                <!-- Strategy Cards Grid -->
+                <div class="strategies-grid">
+                    
+                    <div class="strategy-card zero-shot" data-strategy="zero-shot">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="card-title">Zero-Shot</div>
+                                <div class="card-era">Circa 2020</div>
+                            </div>
+                        </div>
+                        <p class="card-description">Direct instruction without examples. Ask the model to perform a task relying solely on its training.</p>
+                        <div class="card-status">
+                            <div class="status-indicator evolved"></div>
+                            <span class="status-text"><strong>Now default</strong> for capable models</span>
+                        </div>
+                    </div>
+
+                    <div class="strategy-card few-shot" data-strategy="few-shot">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    <path d="M14 17.5h7M17.5 14v7"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="card-title">Few-Shot</div>
+                                <div class="card-era">Circa 2020-2021</div>
+                            </div>
+                        </div>
+                        <p class="card-description">Provide examples in the prompt to demonstrate the desired pattern or format.</p>
+                        <div class="card-status">
+                            <div class="status-indicator foundation"></div>
+                            <span class="status-text"><strong>Format alignment</strong> primary use now</span>
+                        </div>
+                    </div>
+
+                    <div class="strategy-card chain-of-thought" data-strategy="chain-of-thought">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="6" cy="6" r="3"/>
+                                    <circle cx="18" cy="12" r="3"/>
+                                    <circle cx="6" cy="18" r="3"/>
+                                    <path d="M8.5 7.5l7 3M8.5 16.5l7-3"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="card-title">Chain of Thought</div>
+                                <div class="card-era">Circa 2022</div>
+                            </div>
+                        </div>
+                        <p class="card-description">Guide the model to show intermediate reasoning steps before reaching a conclusion.</p>
+                        <div class="card-status">
+                            <div class="status-indicator evolved"></div>
+                            <span class="status-text"><strong>Built-in</strong> to reasoning models</span>
+                        </div>
+                    </div>
+
+                    <div class="strategy-card role-persona" data-strategy="role-persona">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="8" r="4"/>
+                                    <path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="card-title">Role / Persona</div>
+                                <div class="card-era">Circa 2021-2022</div>
+                            </div>
+                        </div>
+                        <p class="card-description">Assign the model a specific role or expertise to shape tone, depth, and perspective.</p>
+                        <div class="card-status">
+                            <div class="status-indicator foundation"></div>
+                            <span class="status-text"><strong>Still effective</strong> for framing</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Detail Panel -->
+                <div class="detail-panel">
+                    <div class="panel-header">Strategy Deep Dive</div>
+                    
+                    <div class="detail-card">
+                        <!-- Default -->
+                        <div class="detail-content active" id="default-detail">
+                            <div class="default-content">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 8v4l3 3"/>
+                                    <circle cx="12" cy="12" r="10"/>
+                                </svg>
+                                <p>Click a strategy to see how it evolved<br/>and when to apply it today</p>
+                            </div>
+                        </div>
+
+                        <!-- Zero-Shot -->
+                        <div class="detail-content" id="zero-shot-detail">
+                            <div class="detail-header">
+                                <div class="detail-icon" style="background: rgba(99,179,237,0.15); color: #63b3ed;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 6v6l4 2"/>
+                                    </svg>
+                                </div>
+                                <h3 style="color: #63b3ed;">Zero-Shot Prompting</h3>
+                            </div>
+
+                            <div class="timeline-compare">
+                                <div class="timeline-box then">
+                                    <div class="timeline-label">Then (2020-2022)</div>
+                                    <p>Often insufficient for complex tasks. Models needed examples to understand what was expected. "Just ask" frequently produced inconsistent results.</p>
+                                </div>
+                                <div class="timeline-box now">
+                                    <div class="timeline-label">Now (2025)</div>
+                                    <p>Strong models handle zero-shot well for most tasks. Instruction-tuning and RLHF have made models much better at understanding intent without examples.</p>
+                                </div>
+                            </div>
+
+                            <div class="principle-box">
+                                <h4>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    The Enduring Principle
+                                </h4>
+                                <p>Clarity and specificity in your instruction matter more than tricks. The better you articulate what you want, the better the output—regardless of technique.</p>
+                            </div>
+
+                            <div class="when-section">
+                                <h4>When to Apply Today</h4>
+                                <div class="when-grid">
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">Standard tasks with clear instructions</span>
+                                    </div>
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">When you want unbiased output (no example influence)</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">When specific output format is critical</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">Smaller/older models that need guidance</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Few-Shot -->
+                        <div class="detail-content" id="few-shot-detail">
+                            <div class="detail-header">
+                                <div class="detail-icon" style="background: rgba(246,173,85,0.15); color: #f6ad55;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                        <path d="M14 17.5h7M17.5 14v7"/>
+                                    </svg>
+                                </div>
+                                <h3 style="color: #f6ad55;">Few-Shot Prompting</h3>
+                            </div>
+
+                            <div class="timeline-compare">
+                                <div class="timeline-box then">
+                                    <div class="timeline-label">Then (2020-2022)</div>
+                                    <p>Essential for complex tasks. In-context learning was a breakthrough—providing examples unlocked capabilities models couldn't otherwise demonstrate.</p>
+                                </div>
+                                <div class="timeline-box now">
+                                    <div class="timeline-label">Now (2025)</div>
+                                    <p>Primary function is output format alignment—showing the model exactly how you want results structured. Less about unlocking capability, more about shaping presentation.</p>
+                                </div>
+                            </div>
+
+                            <div class="principle-box">
+                                <h4>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    The Enduring Principle
+                                </h4>
+                                <p>Showing is often clearer than telling. When you need a specific pattern, format, or style, a concrete example communicates more than description alone.</p>
+                            </div>
+
+                            <div class="when-section">
+                                <h4>When to Apply Today</h4>
+                                <div class="when-grid">
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">Precise output formatting (JSON, specific templates)</span>
+                                    </div>
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">Matching a specific tone or writing style</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">Strong models on standard reasoning tasks</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">When examples might bias the output</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chain of Thought -->
+                        <div class="detail-content" id="chain-of-thought-detail">
+                            <div class="detail-header">
+                                <div class="detail-icon" style="background: rgba(183,148,244,0.15); color: #b794f4;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="6" cy="6" r="3"/>
+                                        <circle cx="18" cy="12" r="3"/>
+                                        <circle cx="6" cy="18" r="3"/>
+                                        <path d="M8.5 7.5l7 3M8.5 16.5l7-3"/>
+                                    </svg>
+                                </div>
+                                <h3 style="color: #b794f4;">Chain of Thought</h3>
+                            </div>
+
+                            <div class="timeline-compare">
+                                <div class="timeline-box then">
+                                    <div class="timeline-label">Then (2022-2023)</div>
+                                    <p>Breakthrough for reasoning tasks. "Let's think step by step" dramatically improved math, logic, and complex problem-solving. Required explicit prompting.</p>
+                                </div>
+                                <div class="timeline-box now">
+                                    <div class="timeline-label">Now (2025)</div>
+                                    <p>Reasoning-native models (o1, Claude with extended thinking) have CoT built in. Explicit prompting less necessary—but still useful for transparency and verification.</p>
+                                </div>
+                            </div>
+
+                            <div class="principle-box">
+                                <h4>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    The Enduring Principle
+                                </h4>
+                                <p>Breaking problems into steps improves accuracy. Whether you prompt for it or the model does it internally, structured reasoning produces better outcomes on complex tasks.</p>
+                            </div>
+
+                            <div class="when-section">
+                                <h4>When to Apply Today</h4>
+                                <div class="when-grid">
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">When you need to see/verify the reasoning</span>
+                                    </div>
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">Smaller models without built-in reasoning</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">Simple factual questions (adds unnecessary tokens)</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">Reasoning-native models already doing it internally</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Role/Persona -->
+                        <div class="detail-content" id="role-persona-detail">
+                            <div class="detail-header">
+                                <div class="detail-icon" style="background: rgba(104,211,145,0.15); color: #68d391;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="8" r="4"/>
+                                        <path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+                                    </svg>
+                                </div>
+                                <h3 style="color: #68d391;">Role / Persona</h3>
+                            </div>
+
+                            <div class="timeline-compare">
+                                <div class="timeline-box then">
+                                    <div class="timeline-label">Then (2021-2023)</div>
+                                    <p>"Act as a senior engineer" or "You are an expert in X" was seen as unlocking hidden knowledge. Viral prompt templates featured elaborate role assignments.</p>
+                                </div>
+                                <div class="timeline-box now">
+                                    <div class="timeline-label">Now (2025)</div>
+                                    <p>Still effective for framing tone, depth, and perspective—but the model isn't "becoming" the persona. It's adjusting register based on context you've provided.</p>
+                                </div>
+                            </div>
+
+                            <div class="principle-box">
+                                <h4>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    The Enduring Principle
+                                </h4>
+                                <p>Context shapes output. Establishing who the "speaker" is and who the "audience" is focuses the response—just like framing works in human communication.</p>
+                            </div>
+
+                            <div class="when-section">
+                                <h4>When to Apply Today</h4>
+                                <div class="when-grid">
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">Setting appropriate technical depth or tone</span>
+                                    </div>
+                                    <div class="when-item yes">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                                        <span class="when-text">Creative writing with specific voice/perspective</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">Expecting "secret knowledge" from the persona</span>
+                                    </div>
+                                    <div class="when-item no">
+                                        <div class="when-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M6 18L18 6"/></svg></div>
+                                        <span class="when-text">Overcomplicating simple requests</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="insight-banner">
+                        <div class="insight-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div class="insight-text">
+                            <strong>The meta-lesson:</strong> These techniques worked because they provided structure and context. Modern models have internalized much of this—but understanding <em>why</em> they worked helps you know <em>when</em> to still apply them.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Interactive strategy selection
+        const strategyCards = document.querySelectorAll('.strategy-card');
+        const detailContents = document.querySelectorAll('.detail-content');
+
+        function selectStrategy(strategyName) {
+            // Update card highlights
+            strategyCards.forEach(card => {
+                card.classList.toggle('highlighted', card.dataset.strategy === strategyName);
+            });
+
+            // Update detail panel
+            detailContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const targetDetail = document.getElementById(`${strategyName}-detail`);
+            if (targetDetail) {
+                targetDetail.classList.add('active');
+            }
+        }
+
+        // Add click handlers
+        strategyCards.forEach(card => {
+            card.addEventListener('click', () => {
+                selectStrategy(card.dataset.strategy);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTL Design vs Testbench</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 1.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin: 4px 0 20px 0;
+            font-size: 0.95em;
+        }
+
+        /* Key Concepts */
+        .key-concepts {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .concept {
+            background: rgba(255,255,255,0.05);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border-left: 4px solid;
+            max-width: 350px;
+        }
+
+        .concept.tb { border-color: #ff9800; }
+        .concept.rtl { border-color: #4caf50; }
+
+        .concept strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 1.05em;
+        }
+
+        .concept span {
+            color: #90a4ae;
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .concept .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .concept.tb .tag { background: rgba(255, 152, 0, 0.3); color: #ffb74d; }
+        .concept.rtl .tag { background: rgba(76, 175, 80, 0.3); color: #81c784; }
+
+        /* Instructions */
+        .instructions {
+            background: rgba(79, 195, 247, 0.1);
+            border: 1px solid #4fc3f7;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .instructions strong {
+            color: #4fc3f7;
+        }
+
+        /* Two Panel Layout */
+        .two-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .panel {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 14px;
+            padding: 18px;
+            min-height: 400px;
+        }
+
+        .panel.testbench { border-color: #ff9800; }
+        .panel.design { border-color: #4caf50; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .panel-title {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-badge {
+            font-size: 0.65em;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .panel-badge.tb { background: #ff9800; color: #000; }
+        .panel-badge.rtl { background: #4caf50; color: #000; }
+
+        .panel-subtitle {
+            color: #90a4ae;
+            font-size: 0.8em;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85em;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .code-line {
+            display: block;
+            padding: 2px 0;
+        }
+
+        .code-line:hover {
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* Syntax Highlighting */
+        .keyword { color: #c792ea; }
+        .type { color: #82aaff; }
+        .module-name { color: #ffcb6b; }
+        .module-name.clickable {
+            cursor: pointer;
+            padding: 1px 4px;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+        .module-name.clickable:hover {
+            background: rgba(255, 203, 107, 0.2);
+        }
+        .module-name.highlighted {
+            background: rgba(255, 203, 107, 0.4);
+            box-shadow: 0 0 8px rgba(255, 203, 107, 0.6);
+            font-weight: 600;
+        }
+        .comment { color: #546e7a; font-style: italic; }
+        .number { color: #f78c6c; }
+        .string { color: #c3e88d; }
+        .operator { color: #89ddff; }
+
+        /* Highlightable Signals */
+        .signal {
+            padding: 1px 4px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .signal:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .signal.input { color: #4fc3f7; }
+        .signal.output { color: #f48fb1; }
+        .signal.wire { color: #80cbc4; }
+        .signal.reg { color: #ffab91; }
+
+        .signal.highlighted {
+            background: rgba(255, 235, 59, 0.3);
+            box-shadow: 0 0 8px rgba(255, 235, 59, 0.5);
+            color: #ffeb3b !important;
+            font-weight: 600;
+        }
+
+        /* Connection Line SVG */
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .connection-line {
+            fill: none;
+            stroke: #ffeb3b;
+            stroke-width: 2;
+            stroke-dasharray: 8, 4;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .connection-line.visible {
+            opacity: 1;
+            animation: dash 0.5s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -12; }
+        }
+
+        /* Signal Legend */
+        .signal-legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-color.input { background: #4fc3f7; }
+        .legend-color.output { background: #f48fb1; }
+        .legend-color.wire { background: #80cbc4; }
+        .legend-color.reg { background: #ffab91; }
+
+        /* Module Diagram */
+        .module-diagram {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid #4caf50;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .diagram-title {
+            font-size: 0.85em;
+            color: #81c784;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .module-box {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .port-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .port-label {
+            font-size: 0.75em;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .port-label.input {
+            background: rgba(79, 195, 247, 0.2);
+            border: 1px solid #4fc3f7;
+            color: #4fc3f7;
+            text-align: right;
+        }
+
+        .port-label.output {
+            background: rgba(244, 143, 177, 0.2);
+            border: 1px solid #f48fb1;
+            color: #f48fb1;
+            text-align: left;
+        }
+
+        .port-label.highlighted {
+            background: rgba(255, 235, 59, 0.3);
+            border-color: #ffeb3b;
+            color: #ffeb3b;
+            box-shadow: 0 0 8px rgba(255, 235, 59, 0.5);
+        }
+
+        .module-core {
+            background: #1a1a2e;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px 30px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .module-core-name {
+            font-weight: 700;
+            color: #ffcb6b;
+            font-size: 0.95em;
+        }
+
+        .module-core-name.clickable {
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .module-core-name.clickable:hover {
+            background: rgba(255, 203, 107, 0.2);
+        }
+
+        .module-core-name.highlighted {
+            background: rgba(255, 203, 107, 0.4);
+            box-shadow: 0 0 8px rgba(255, 203, 107, 0.6);
+        }
+
+        .module-core-type {
+            font-size: 0.7em;
+            color: #90a4ae;
+            margin-top: 4px;
+        }
+
+        .arrow-in, .arrow-out {
+            width: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #546e7a;
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            color: #607d8b;
+            font-size: 0.85em;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .footer-note strong {
+            color: #ff9800;
+        }
+
+        /* Selection Info */
+        .selection-info {
+            background: rgba(255, 235, 59, 0.1);
+            border: 1px solid #ffeb3b;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .selection-info.empty {
+            border-color: #546e7a;
+            background: rgba(84, 110, 122, 0.1);
+            color: #90a4ae;
+        }
+
+        .selection-info .signal-name {
+            color: #ffeb3b;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧪 RTL Design vs Testbench</h1>
+        <p class="subtitle">Understanding the separation between synthesizable hardware and simulation-only code</p>
+
+        <!-- Key Concepts -->
+        <div class="key-concepts">
+            <div class="concept rtl">
+                <strong>📄 Design Module (RTL)</strong>
+                <span>Describes actual hardware that gets synthesized onto the FPGA. Defines inputs, outputs, and the logic between them.</span>
+                <div class="tag">→ Goes on FPGA</div>
+            </div>
+            <div class="concept tb">
+                <strong>🧪 Testbench</strong>
+                <span>Simulation-only code that tests your design. Generates input signals, instantiates your module, and checks outputs. Never synthesized!</span>
+                <div class="tag">→ Simulation Only</div>
+            </div>
+        </div>
+
+        <!-- Signal Legend -->
+        <div class="signal-legend">
+            <div class="legend-item"><div class="legend-color input"></div> input</div>
+            <div class="legend-item"><div class="legend-color output"></div> output</div>
+            <div class="legend-item"><div class="legend-color reg"></div> reg (testbench drives)</div>
+            <div class="legend-item"><div class="legend-color wire"></div> wire (testbench observes)</div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+            <strong>👆 Click on any signal or module name</strong> to see how testbench code connects to the design module
+        </div>
+
+        <!-- Selection Info -->
+        <div class="selection-info empty" id="selectionInfo">
+            No signal selected. Click a highlighted signal or <span style="color: #ffcb6b;">module name</span> in the code to see connections.
+        </div>
+
+        <!-- Two Panel Layout -->
+        <div class="two-panels" id="panelsContainer">
+            <!-- Testbench Panel (Left) -->
+            <div class="panel testbench">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">
+                            🧪 Testbench
+                            <span class="panel-badge tb">Simulation Only</span>
+                        </div>
+                        <div class="panel-subtitle">tb_counter.v — Drives inputs, checks outputs</div>
+                    </div>
+                </div>
+
+                <div class="code-block" id="tbCode">
+                    <span class="code-line"><span class="comment">// Testbench - NOT synthesizable!</span></span>
+                    <span class="code-line"><span class="keyword">module</span> <span class="module-name">tb_counter</span>;</span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="comment">// Testbench signals (directly drives design inputs)</span></span>
+                    <span class="code-line">  <span class="keyword">reg</span> <span class="signal reg" data-signal="clk">clk</span>;           <span class="comment">// TB generates clock</span></span>
+                    <span class="code-line">  <span class="keyword">reg</span> <span class="signal reg" data-signal="reset">reset</span>;         <span class="comment">// TB controls reset</span></span>
+                    <span class="code-line">  <span class="keyword">reg</span> <span class="signal reg" data-signal="enable">enable</span>;        <span class="comment">// TB controls enable</span></span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="comment">// Wires to observe design outputs</span></span>
+                    <span class="code-line">  <span class="keyword">wire</span> [<span class="number">3</span>:<span class="number">0</span>] <span class="signal wire" data-signal="count">count</span>;  <span class="comment">// Observe counter value</span></span>
+                    <span class="code-line">  <span class="keyword">wire</span> <span class="signal wire" data-signal="overflow">overflow</span>;      <span class="comment">// Observe overflow flag</span></span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="comment">// Instantiate the Design Under Test (DUT)</span></span>
+                    <span class="code-line">  <span class="module-name clickable" data-module="counter">counter</span> DUT (</span>
+                    <span class="code-line">    .<span class="signal input" data-signal="clk">clk</span>(<span class="signal reg" data-signal="clk">clk</span>),</span>
+                    <span class="code-line">    .<span class="signal input" data-signal="reset">reset</span>(<span class="signal reg" data-signal="reset">reset</span>),</span>
+                    <span class="code-line">    .<span class="signal input" data-signal="enable">enable</span>(<span class="signal reg" data-signal="enable">enable</span>),</span>
+                    <span class="code-line">    .<span class="signal output" data-signal="count">count</span>(<span class="signal wire" data-signal="count">count</span>),</span>
+                    <span class="code-line">    .<span class="signal output" data-signal="overflow">overflow</span>(<span class="signal wire" data-signal="overflow">overflow</span>)</span>
+                    <span class="code-line">  );</span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="comment">// Generate clock (simulation only!)</span></span>
+                    <span class="code-line">  <span class="keyword">always</span> #<span class="number">5</span> <span class="signal reg" data-signal="clk">clk</span> = ~<span class="signal reg" data-signal="clk">clk</span>;</span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="comment">// Test sequence</span></span>
+                    <span class="code-line">  <span class="keyword">initial</span> <span class="keyword">begin</span></span>
+                    <span class="code-line">    <span class="signal reg" data-signal="clk">clk</span> = <span class="number">0</span>;</span>
+                    <span class="code-line">    <span class="signal reg" data-signal="reset">reset</span> = <span class="number">1</span>;</span>
+                    <span class="code-line">    <span class="signal reg" data-signal="enable">enable</span> = <span class="number">0</span>;</span>
+                    <span class="code-line">    #<span class="number">20</span> <span class="signal reg" data-signal="reset">reset</span> = <span class="number">0</span>;</span>
+                    <span class="code-line">    #<span class="number">10</span> <span class="signal reg" data-signal="enable">enable</span> = <span class="number">1</span>;</span>
+                    <span class="code-line">    #<span class="number">200</span> $finish;</span>
+                    <span class="code-line">  <span class="keyword">end</span></span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="keyword">endmodule</span></span>
+                </div>
+            </div>
+
+            <!-- Design Panel (Right) -->
+            <div class="panel design">
+                <div class="panel-header">
+                    <div>
+                        <div class="panel-title">
+                            📄 Design Module
+                            <span class="panel-badge rtl">Synthesizable RTL</span>
+                        </div>
+                        <div class="panel-subtitle">counter.v — Actual hardware description</div>
+                    </div>
+                </div>
+
+                <div class="code-block" id="rtlCode">
+                    <span class="code-line"><span class="comment">// Synthesizable RTL - becomes real hardware!</span></span>
+                    <span class="code-line"><span class="keyword">module</span> <span class="module-name clickable" data-module="counter">counter</span> (</span>
+                    <span class="code-line">  <span class="keyword">input</span>  <span class="keyword">wire</span> <span class="signal input" data-signal="clk">clk</span>,         <span class="comment">// Clock input</span></span>
+                    <span class="code-line">  <span class="keyword">input</span>  <span class="keyword">wire</span> <span class="signal input" data-signal="reset">reset</span>,       <span class="comment">// Reset input</span></span>
+                    <span class="code-line">  <span class="keyword">input</span>  <span class="keyword">wire</span> <span class="signal input" data-signal="enable">enable</span>,      <span class="comment">// Enable input</span></span>
+                    <span class="code-line">  <span class="keyword">output</span> <span class="keyword">reg</span>  [<span class="number">3</span>:<span class="number">0</span>] <span class="signal output" data-signal="count">count</span>, <span class="comment">// 4-bit count</span></span>
+                    <span class="code-line">  <span class="keyword">output</span> <span class="keyword">wire</span> <span class="signal output" data-signal="overflow">overflow</span>     <span class="comment">// Overflow flag</span></span>
+                    <span class="code-line">);</span>
+                    <span class="code-line"></span>
+                    <span class="code-line">  <span class="comment">// Overflow when count reaches max</span></span>
+                    <span class="code-line">  <span class="keyword">assign</span> <span class="signal output" data-signal="overflow">overflow</span> = (<span class="signal output" data-signal="count">count</span> == <span class="number">4'hF</span>);</span>
+                    <span class="code-line"></span>
+                    <span class="code-line">  <span class="comment">// Counter logic</span></span>
+                    <span class="code-line">  <span class="keyword">always</span> @(<span class="keyword">posedge</span> <span class="signal input" data-signal="clk">clk</span>) <span class="keyword">begin</span></span>
+                    <span class="code-line">    <span class="keyword">if</span> (<span class="signal input" data-signal="reset">reset</span>)</span>
+                    <span class="code-line">      <span class="signal output" data-signal="count">count</span> <= <span class="number">4'b0</span>;</span>
+                    <span class="code-line">    <span class="keyword">else if</span> (<span class="signal input" data-signal="enable">enable</span>)</span>
+                    <span class="code-line">      <span class="signal output" data-signal="count">count</span> <= <span class="signal output" data-signal="count">count</span> + <span class="number">1</span>;</span>
+                    <span class="code-line">  <span class="keyword">end</span></span>
+                    <span class="code-line"></span>
+                    <span class="code-line"><span class="keyword">endmodule</span></span>
+                </div>
+
+                <!-- Module Diagram -->
+                <div class="module-diagram">
+                    <div class="diagram-title">Module Port Diagram</div>
+                    <div class="module-box">
+                        <div class="port-column">
+                            <div class="port-label input" data-signal="clk">clk →</div>
+                            <div class="port-label input" data-signal="reset">reset →</div>
+                            <div class="port-label input" data-signal="enable">enable →</div>
+                        </div>
+                        <div class="arrow-in">→</div>
+                        <div class="module-core">
+                            <div class="module-core-name clickable" data-module="counter">counter</div>
+                            <div class="module-core-type">Design Module</div>
+                        </div>
+                        <div class="arrow-out">→</div>
+                        <div class="port-column">
+                            <div class="port-label output" data-signal="count">→ count[3:0]</div>
+                            <div class="port-label output" data-signal="overflow">→ overflow</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-note">
+            <strong>Remember:</strong> Testbenches use <code>reg</code> to drive inputs and <code>wire</code> to observe outputs. 
+            The testbench instantiates your design module and connects signals to its ports.
+        </div>
+    </div>
+
+    <script>
+        const signalInfo = {
+            clk: {
+                name: 'clk',
+                type: 'input',
+                desc: 'Clock signal — Testbench generates this with an always block. Design uses it to synchronize logic.',
+                tb: 'reg (testbench drives)',
+                rtl: 'input wire'
+            },
+            reset: {
+                name: 'reset',
+                type: 'input',
+                desc: 'Reset signal — Testbench controls this to initialize the design. Design uses it to clear the counter.',
+                tb: 'reg (testbench drives)',
+                rtl: 'input wire'
+            },
+            enable: {
+                name: 'enable',
+                type: 'input',
+                desc: 'Enable signal — Testbench sets this to control when counting happens. Design checks it before incrementing.',
+                tb: 'reg (testbench drives)',
+                rtl: 'input wire'
+            },
+            count: {
+                name: 'count[3:0]',
+                type: 'output',
+                desc: 'Counter value — Design produces this 4-bit output. Testbench observes it via wire to verify correctness.',
+                tb: 'wire (testbench observes)',
+                rtl: 'output reg [3:0]'
+            },
+            overflow: {
+                name: 'overflow',
+                type: 'output',
+                desc: 'Overflow flag — Design asserts this when count reaches maximum. Testbench observes it to verify behavior.',
+                tb: 'wire (testbench observes)',
+                rtl: 'output wire'
+            }
+        };
+
+        const moduleInfo = {
+            counter: {
+                name: 'counter',
+                desc: 'A 4-bit synchronous counter with enable and reset. The testbench instantiates this module as "DUT" (Design Under Test) and connects its signals to test the behavior.',
+                designLoc: 'Defined in counter.v (right panel)',
+                tbLoc: 'Instantiated in tb_counter.v (left panel)'
+            }
+        };
+
+        let selectedSignal = null;
+        let selectedModule = null;
+
+        function clearAllHighlights() {
+            document.querySelectorAll('.signal.highlighted, .port-label.highlighted, .module-name.highlighted, .module-core-name.highlighted').forEach(el => {
+                el.classList.remove('highlighted');
+            });
+        }
+
+        function highlightSignal(signalName) {
+            clearAllHighlights();
+            selectedModule = null;
+
+            if (signalName === selectedSignal) {
+                // Deselect
+                selectedSignal = null;
+                updateSelectionInfo(null, 'signal');
+                return;
+            }
+
+            selectedSignal = signalName;
+
+            // Highlight all matching signals
+            document.querySelectorAll(`[data-signal="${signalName}"]`).forEach(el => {
+                el.classList.add('highlighted');
+            });
+
+            updateSelectionInfo(signalName, 'signal');
+        }
+
+        function highlightModule(moduleName) {
+            clearAllHighlights();
+            selectedSignal = null;
+
+            if (moduleName === selectedModule) {
+                // Deselect
+                selectedModule = null;
+                updateSelectionInfo(null, 'module');
+                return;
+            }
+
+            selectedModule = moduleName;
+
+            // Highlight all matching module names
+            document.querySelectorAll(`[data-module="${moduleName}"]`).forEach(el => {
+                el.classList.add('highlighted');
+            });
+
+            updateSelectionInfo(moduleName, 'module');
+        }
+
+        function updateSelectionInfo(name, type) {
+            const infoBox = document.getElementById('selectionInfo');
+            
+            if (!name) {
+                infoBox.className = 'selection-info empty';
+                infoBox.innerHTML = 'No signal selected. Click a highlighted signal or module name in the code to see connections.';
+                return;
+            }
+
+            if (type === 'module') {
+                const info = moduleInfo[name];
+                infoBox.className = 'selection-info';
+                infoBox.innerHTML = `
+                    <div>
+                        <span class="signal-name" style="color: #ffcb6b;">${info.name}</span> (module) — ${info.desc}<br>
+                        <small style="color: #90a4ae;"><strong style="color: #4caf50;">${info.designLoc}</strong> | <strong style="color: #ff9800;">${info.tbLoc}</strong></small>
+                    </div>
+                `;
+            } else {
+                const info = signalInfo[name];
+                infoBox.className = 'selection-info';
+                infoBox.innerHTML = `
+                    <div>
+                        <span class="signal-name">${info.name}</span> (${info.type}) — ${info.desc}<br>
+                        <small style="color: #90a4ae;">Testbench: <strong style="color: #ffab91;">${info.tb}</strong> | Design: <strong style="color: #4fc3f7;">${info.rtl}</strong></small>
+                    </div>
+                `;
+            }
+        }
+
+        // Event delegation for signal and module clicks
+        document.addEventListener('click', (e) => {
+            const moduleEl = e.target.closest('[data-module]');
+            if (moduleEl) {
+                const moduleName = moduleEl.getAttribute('data-module');
+                highlightModule(moduleName);
+                return;
+            }
+
+            const signalEl = e.target.closest('[data-signal]');
+            if (signalEl) {
+                const signalName = signalEl.getAttribute('data-signal');
+                highlightSignal(signalName);
+            }
+        });
+    </script>
+</body>
+
+</html>

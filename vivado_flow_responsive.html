@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vivado FPGA Design Flow</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0d1117;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Viewport container maintains 16:9 aspect ratio */
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fixed 1920x1080 design surface */
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            padding: 24px 48px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 42px;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+
+        /* Key Concepts */
+        .key-concepts {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+        }
+
+        .concept {
+            background: rgba(255,255,255,0.05);
+            padding: 10px 18px;
+            border-radius: 10px;
+            border-left: 5px solid;
+            font-size: 16px;
+        }
+
+        .concept.rtl { border-color: #4caf50; }
+        .concept.tb { border-color: #ff9800; }
+        .concept.xdc { border-color: #e91e63; }
+        .concept.bit { border-color: #9c27b0; }
+        .concept.fpga { border-color: #00bcd4; }
+
+        .concept strong {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 17px;
+        }
+
+        .concept span {
+            color: #90a4ae;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .controls button {
+            background: #1a237e;
+            color: #fff;
+            border: 2px solid #5c6bc0;
+            border-radius: 12px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 17px;
+            transition: all 0.15s ease;
+            min-width: 145px;
+        }
+
+        .controls button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: #4fc3f7;
+        }
+
+        .controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .controls .project-btn {
+            background: linear-gradient(145deg, #00897b, #00695c);
+            border-color: #4db6ac;
+        }
+
+        .controls .add-btn {
+            background: linear-gradient(145deg, #455a64, #37474f);
+            border-color: #78909c;
+        }
+
+        .controls .sim-btn {
+            background: linear-gradient(145deg, #ff9800, #f57c00);
+            color: #000;
+            border-color: #ffb74d;
+        }
+
+        .controls .synth-btn {
+            background: linear-gradient(145deg, #2196f3, #1976d2);
+            border-color: #64b5f6;
+        }
+
+        .controls .impl-btn {
+            background: linear-gradient(145deg, #7b1fa2, #6a1b9a);
+            border-color: #ba68c8;
+        }
+
+        .controls .bit-btn {
+            background: linear-gradient(145deg, #4caf50, #388e3c);
+            border-color: #81c784;
+        }
+
+        .controls .prog-btn {
+            background: linear-gradient(145deg, #00bcd4, #0097a7);
+            border-color: #4dd0e1;
+        }
+
+        .controls .reset-btn {
+            background: #0d1b2a;
+            color: #90a4ae;
+            border-color: #546e7a;
+        }
+
+        /* Status Message */
+        .status-bar {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 12px 22px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .status-message {
+            color: #cfd8dc;
+            font-size: 20px;
+        }
+
+        /* Two Panel Layout */
+        .two-panels {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 28px;
+            flex: 1;
+            min-height: 0;
+            margin-bottom: 12px;
+        }
+
+        .panel {
+            background: #0d1b2a;
+            border: 3px solid #546e7a;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel.sources { border-color: #00897b; }
+        .panel.flow { border-color: #5e35b1; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .panel-title {
+            font-weight: 700;
+            font-size: 26px;
+            color: #e0e0e0;
+        }
+
+        .panel-badge {
+            font-size: 14px;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .panel-badge.sources { background: #00897b; }
+        .panel-badge.flow { background: #5e35b1; }
+
+        /* File Groups */
+        .file-groups-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .file-group {
+            margin-bottom: 18px;
+        }
+
+        .file-group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .file-group-title {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .file-group-title.rtl { color: #4caf50; }
+        .file-group-title.tb { color: #ff9800; }
+        .file-group-title.xdc { color: #e91e63; }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-left: 12px;
+        }
+
+        .file-card {
+            background: rgba(84, 110, 122, 0.15);
+            border: 2px solid #546e7a;
+            color: #90a4ae;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.15s ease;
+        }
+
+        .file-card.added {
+            border-color: #4caf50;
+            color: #e0e0e0;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .file-card.rtl.added { border-color: #4caf50; }
+        .file-card.tb.added { border-color: #ff9800; }
+        .file-card.xdc.added { border-color: #e91e63; }
+
+        .check-box {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #546e7a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            color: #0d1b2a;
+            background: #0a1628;
+            flex-shrink: 0;
+        }
+
+        .check-box.filled {
+            background: #4caf50;
+            border-color: #4caf50;
+        }
+
+        .file-icon {
+            font-size: 20px;
+        }
+
+        /* Flow Steps */
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .flow-step {
+            background: rgba(84, 110, 122, 0.1);
+            border: 2px solid #37474f;
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .flow-step.available {
+            border-color: #546e7a;
+            background: rgba(84, 110, 122, 0.2);
+        }
+
+        .flow-step.completed {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.15);
+        }
+
+        .flow-step.active {
+            border-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.15);
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(79, 195, 247, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(79, 195, 247, 0.5); }
+        }
+
+        .step-number {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #37474f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 17px;
+            flex-shrink: 0;
+        }
+
+        .flow-step.completed .step-number {
+            background: #4caf50;
+        }
+
+        .flow-step.available .step-number {
+            background: #546e7a;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 600;
+            font-size: 19px;
+            color: #e0e0e0;
+        }
+
+        .step-desc {
+            font-size: 16px;
+            color: #90a4ae;
+            margin-top: 3px;
+        }
+
+        .step-requires {
+            font-size: 14px;
+            color: #ff9800;
+            margin-top: 5px;
+        }
+
+        /* Output Files */
+        .output-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .output-title {
+            font-size: 17px;
+            color: #90a4ae;
+            margin-bottom: 10px;
+        }
+
+        .output-files {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .output-file {
+            background: rgba(156, 39, 176, 0.2);
+            border: 2px solid #9c27b0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #ce93d8;
+            opacity: 0.3;
+            transition: all 0.2s ease;
+        }
+
+        .output-file.generated {
+            opacity: 1;
+            background: rgba(156, 39, 176, 0.3);
+        }
+
+        .output-file.fpga-status {
+            border-color: #00bcd4;
+            color: #4dd0e1;
+            background: rgba(0, 188, 212, 0.1);
+        }
+
+        .output-file.fpga-status.generated {
+            background: rgba(0, 188, 212, 0.3);
+            animation: running 1.5s ease-in-out infinite;
+        }
+
+        @keyframes running {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 188, 212, 0.4); }
+            50% { box-shadow: 0 0 15px rgba(0, 188, 212, 0.8); }
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            color: #607d8b;
+            font-size: 17px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <h1>🔧 Vivado FPGA Design Flow</h1>
+            <p class="subtitle">From source files to bitstream: the complete FPGA development workflow</p>
+
+            <!-- Key Concepts -->
+            <div class="key-concepts">
+                <div class="concept rtl">
+                    <strong>📄 RTL Design (.v)</strong>
+                    <span>Your hardware design in Verilog</span>
+                </div>
+                <div class="concept tb">
+                    <strong>🧪 Testbench (.v)</strong>
+                    <span>Simulation test code</span>
+                </div>
+                <div class="concept xdc">
+                    <strong>📍 Constraints (.xdc)</strong>
+                    <span>Pin assignments & timing</span>
+                </div>
+                <div class="concept bit">
+                    <strong>💾 Bitstream (.bit)</strong>
+                    <span>Final file for FPGA</span>
+                </div>
+                <div class="concept fpga">
+                    <strong>🎛️ Basys 3 Board</strong>
+                    <span>Program & test hardware</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="project-btn" id="projectBtn">📁 Create Project</button>
+                <button class="add-btn" id="addRtlBtn" disabled>+ Add RTL</button>
+                <button class="add-btn" id="addTbBtn" disabled>+ Add Testbench</button>
+                <button class="add-btn" id="addXdcBtn" disabled>+ Add Constraints</button>
+                <button class="reset-btn" id="resetBtn">🔄 Reset</button>
+            </div>
+
+            <div class="controls">
+                <button class="sim-btn" id="simBtn" disabled>▶️ Run Simulation</button>
+                <button class="synth-btn" id="synthBtn" disabled>⚙️ Run Synthesis</button>
+                <button class="impl-btn" id="implBtn" disabled>🔨 Run Implementation</button>
+                <button class="bit-btn" id="bitBtn" disabled>💾 Generate Bitstream</button>
+                <button class="prog-btn" id="progBtn" disabled>🎛️ Program Basys 3</button>
+            </div>
+
+            <!-- Status -->
+            <div class="status-bar">
+                <div class="status-message" id="statusMessage">
+                    Start by creating a new Vivado project.
+                </div>
+            </div>
+
+            <!-- Two Panel Layout -->
+            <div class="two-panels">
+                <!-- Source Files Panel -->
+                <div class="panel sources">
+                    <div class="panel-header">
+                        <span class="panel-title">📂 Source Files</span>
+                        <span class="panel-badge sources">Your Code</span>
+                    </div>
+
+                    <div class="file-groups-container">
+                        <div class="file-group">
+                            <div class="file-group-header">
+                                <span class="file-group-title rtl">Design Sources (RTL)</span>
+                            </div>
+                            <div class="file-list" id="rtlFiles"></div>
+                        </div>
+
+                        <div class="file-group">
+                            <div class="file-group-header">
+                                <span class="file-group-title tb">Simulation Sources</span>
+                            </div>
+                            <div class="file-list" id="tbFiles"></div>
+                        </div>
+
+                        <div class="file-group">
+                            <div class="file-group-header">
+                                <span class="file-group-title xdc">Constraints</span>
+                            </div>
+                            <div class="file-list" id="xdcFiles"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow Panel -->
+                <div class="panel flow">
+                    <div class="panel-header">
+                        <span class="panel-title">🔄 Design Flow</span>
+                        <span class="panel-badge flow">Vivado Steps</span>
+                    </div>
+
+                    <div class="flow-steps" id="flowSteps">
+                        <!-- Steps rendered by JS -->
+                    </div>
+
+                    <div class="output-section">
+                        <div class="output-title">Generated Output Files:</div>
+                        <div class="output-files" id="outputFiles">
+                            <div class="output-file" id="out-netlist">.dcp (netlist)</div>
+                            <div class="output-file" id="out-impl">.dcp (implemented)</div>
+                            <div class="output-file" id="out-bit">.bit (bitstream)</div>
+                            <div class="output-file fpga-status" id="out-fpga">🎛️ FPGA Running!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer-note">
+                Simulation verifies behavior → Synthesis converts to gates → Implementation places & routes → Bitstream creates the file → Program downloads to FPGA!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== DPI-Responsive Scaling =====
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Calculate container size maintaining 16:9
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            // Apply uniform scale transform
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        // Initialize with debounced resize handler
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // ===== Application State =====
+        const state = {
+            projectCreated: false,
+            files: {
+                rtl: [
+                    { name: 'top_module.v', added: false },
+                    { name: 'counter.v', added: false }
+                ],
+                tb: [
+                    { name: 'tb_top_module.v', added: false }
+                ],
+                xdc: [
+                    { name: 'basys3_pins.xdc', added: false }
+                ]
+            },
+            flow: {
+                simulation: false,
+                synthesis: false,
+                implementation: false,
+                bitstream: false,
+                programmed: false
+            }
+        };
+
+        const flowSteps = [
+            { 
+                id: 'simulation', 
+                title: 'Simulation', 
+                desc: 'Verify design behavior with testbench',
+                requires: 'Requires: RTL + Testbench',
+                check: () => state.files.rtl.some(f => f.added) && state.files.tb.some(f => f.added)
+            },
+            { 
+                id: 'synthesis', 
+                title: 'Synthesis', 
+                desc: 'Convert RTL to gate-level netlist',
+                requires: 'Requires: RTL files',
+                check: () => state.files.rtl.some(f => f.added)
+            },
+            { 
+                id: 'implementation', 
+                title: 'Implementation', 
+                desc: 'Place & route design on FPGA',
+                requires: 'Requires: Synthesis + Constraints',
+                check: () => state.flow.synthesis && state.files.xdc.some(f => f.added)
+            },
+            { 
+                id: 'bitstream', 
+                title: 'Generate Bitstream', 
+                desc: 'Create .bit file to program FPGA',
+                requires: 'Requires: Implementation complete',
+                check: () => state.flow.implementation
+            },
+            { 
+                id: 'programmed', 
+                title: 'Program Basys 3', 
+                desc: 'Download bitstream to FPGA board',
+                requires: 'Requires: Bitstream + Board connected',
+                check: () => state.flow.bitstream
+            }
+        ];
+
+        // DOM Elements
+        const statusMessage = document.getElementById('statusMessage');
+        const projectBtn = document.getElementById('projectBtn');
+        const addRtlBtn = document.getElementById('addRtlBtn');
+        const addTbBtn = document.getElementById('addTbBtn');
+        const addXdcBtn = document.getElementById('addXdcBtn');
+        const simBtn = document.getElementById('simBtn');
+        const synthBtn = document.getElementById('synthBtn');
+        const implBtn = document.getElementById('implBtn');
+        const bitBtn = document.getElementById('bitBtn');
+        const progBtn = document.getElementById('progBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function setMessage(text) {
+            statusMessage.textContent = text;
+        }
+
+        function renderFiles(containerId, files, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            files.forEach(file => {
+                const card = document.createElement('div');
+                card.className = `file-card ${type}`;
+                if (file.added) card.classList.add('added');
+
+                const box = document.createElement('span');
+                box.className = 'check-box';
+                if (file.added) {
+                    box.classList.add('filled');
+                    box.textContent = '✓';
+                }
+
+                const icon = document.createElement('span');
+                icon.className = 'file-icon';
+                icon.textContent = type === 'rtl' ? '📄' : type === 'tb' ? '🧪' : '📍';
+
+                const name = document.createElement('span');
+                name.textContent = file.name;
+
+                card.appendChild(box);
+                card.appendChild(icon);
+                card.appendChild(name);
+                container.appendChild(card);
+            });
+        }
+
+        function renderFlowSteps() {
+            const container = document.getElementById('flowSteps');
+            container.innerHTML = '';
+
+            flowSteps.forEach((step, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flow-step';
+                
+                const isCompleted = state.flow[step.id];
+                const isAvailable = step.check() && !isCompleted;
+                
+                if (isCompleted) {
+                    div.classList.add('completed');
+                } else if (isAvailable) {
+                    div.classList.add('available');
+                }
+
+                const num = document.createElement('div');
+                num.className = 'step-number';
+                num.textContent = isCompleted ? '✓' : (idx + 1);
+
+                const content = document.createElement('div');
+                content.className = 'step-content';
+
+                const title = document.createElement('div');
+                title.className = 'step-title';
+                title.textContent = step.title;
+
+                const desc = document.createElement('div');
+                desc.className = 'step-desc';
+                desc.textContent = step.desc;
+
+                const requires = document.createElement('div');
+                requires.className = 'step-requires';
+                if (!isCompleted && !isAvailable) {
+                    requires.textContent = step.requires;
+                }
+
+                content.appendChild(title);
+                content.appendChild(desc);
+                content.appendChild(requires);
+
+                div.appendChild(num);
+                div.appendChild(content);
+                container.appendChild(div);
+            });
+        }
+
+        function renderOutputs() {
+            document.getElementById('out-netlist').classList.toggle('generated', state.flow.synthesis);
+            document.getElementById('out-impl').classList.toggle('generated', state.flow.implementation);
+            document.getElementById('out-bit').classList.toggle('generated', state.flow.bitstream);
+            document.getElementById('out-fpga').classList.toggle('generated', state.flow.programmed);
+        }
+
+        function updateButtons() {
+            const hasProject = state.projectCreated;
+            const hasRtl = state.files.rtl.some(f => f.added);
+            const hasTb = state.files.tb.some(f => f.added);
+            const hasXdc = state.files.xdc.some(f => f.added);
+            const allRtlAdded = state.files.rtl.every(f => f.added);
+            const allTbAdded = state.files.tb.every(f => f.added);
+            const allXdcAdded = state.files.xdc.every(f => f.added);
+
+            projectBtn.disabled = hasProject;
+            addRtlBtn.disabled = !hasProject || allRtlAdded;
+            addTbBtn.disabled = !hasProject || allTbAdded;
+            addXdcBtn.disabled = !hasProject || allXdcAdded;
+
+            simBtn.disabled = !(hasRtl && hasTb) || state.flow.simulation;
+            synthBtn.disabled = !hasRtl || state.flow.synthesis;
+            implBtn.disabled = !(state.flow.synthesis && hasXdc) || state.flow.implementation;
+            bitBtn.disabled = !state.flow.implementation || state.flow.bitstream;
+            progBtn.disabled = !state.flow.bitstream || state.flow.programmed;
+        }
+
+        function renderAll() {
+            renderFiles('rtlFiles', state.files.rtl, 'rtl');
+            renderFiles('tbFiles', state.files.tb, 'tb');
+            renderFiles('xdcFiles', state.files.xdc, 'xdc');
+            renderFlowSteps();
+            renderOutputs();
+            updateButtons();
+        }
+
+        // Event Handlers
+        projectBtn.addEventListener('click', () => {
+            state.projectCreated = true;
+            setMessage('Project created! Now add your source files: RTL designs, testbenches, and constraints.');
+            renderAll();
+        });
+
+        addRtlBtn.addEventListener('click', () => {
+            const toAdd = state.files.rtl.filter(f => !f.added);
+            toAdd.forEach(f => f.added = true);
+            setMessage(`Added ${toAdd.length} RTL design file(s). These define your hardware logic.`);
+            renderAll();
+        });
+
+        addTbBtn.addEventListener('click', () => {
+            const toAdd = state.files.tb.filter(f => !f.added);
+            toAdd.forEach(f => f.added = true);
+            setMessage(`Added ${toAdd.length} testbench file(s). Use these for simulation.`);
+            renderAll();
+        });
+
+        addXdcBtn.addEventListener('click', () => {
+            const toAdd = state.files.xdc.filter(f => !f.added);
+            toAdd.forEach(f => f.added = true);
+            setMessage(`Added ${toAdd.length} constraint file(s). These map signals to FPGA pins.`);
+            renderAll();
+        });
+
+        simBtn.addEventListener('click', () => {
+            state.flow.simulation = true;
+            setMessage('✅ Simulation complete! Your testbench verified the design behavior. Now run Synthesis.');
+            renderAll();
+        });
+
+        synthBtn.addEventListener('click', () => {
+            state.flow.synthesis = true;
+            setMessage('✅ Synthesis complete! RTL converted to gate-level netlist (.dcp). Now run Implementation.');
+            renderAll();
+        });
+
+        implBtn.addEventListener('click', () => {
+            state.flow.implementation = true;
+            setMessage('✅ Implementation complete! Design placed & routed on FPGA. Now generate Bitstream.');
+            renderAll();
+        });
+
+        bitBtn.addEventListener('click', () => {
+            state.flow.bitstream = true;
+            setMessage('✅ Bitstream generated! Now connect your Basys 3 and program the FPGA.');
+            renderAll();
+        });
+
+        progBtn.addEventListener('click', () => {
+            state.flow.programmed = true;
+            setMessage('🎉 Success! Your design is now running on the Basys 3 board. Test it out!');
+            renderAll();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            state.projectCreated = false;
+            state.files.rtl.forEach(f => f.added = false);
+            state.files.tb.forEach(f => f.added = false);
+            state.files.xdc.forEach(f => f.added = false);
+            state.flow.simulation = false;
+            state.flow.synthesis = false;
+            state.flow.implementation = false;
+            state.flow.bitstream = false;
+            state.flow.programmed = false;
+            setMessage('Start by creating a new Vivado project.');
+            renderAll();
+        });
+
+        // Initialize
+        renderAll();
+    </script>
+</body>
+
+</html>

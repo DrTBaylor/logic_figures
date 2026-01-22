@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Model: AI Chat Context</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);
+            color: #e8e8ed;
+            padding: 50px 60px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #a8d0ff, #ffffff, #a8d0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            font-size: 20px;
+            font-weight: 300;
+            color: #8888a0;
+        }
+
+        .header .subtitle em {
+            color: #a8d0ff;
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        /* Main content layout */
+        .main-content {
+            display: flex;
+            gap: 60px;
+            height: 820px;
+        }
+
+        /* Left column - the model explanation */
+        .model-column {
+            width: 400px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .concept-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 14px;
+        }
+
+        .concept-box h2 {
+            font-size: 15px;
+            font-weight: 500;
+            color: #a8d0ff;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 14px;
+        }
+
+        .concept-box p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #b8b8c8;
+            font-weight: 300;
+        }
+
+        .concept-box p strong {
+            color: #e8e8ed;
+            font-weight: 500;
+        }
+
+        /* Layer selector */
+        .layer-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .layer-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .layer-btn:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .layer-btn.active {
+            border-width: 2px;
+            padding: 13px 17px;
+        }
+
+        .layer-btn.active[data-layer="system"] {
+            background: rgba(74,85,104,0.2);
+            border-color: #a0aec0;
+        }
+        .layer-btn.active[data-layer="memory"] {
+            background: rgba(128,90,213,0.2);
+            border-color: #b794f4;
+        }
+        .layer-btn.active[data-layer="conversation"] {
+            background: rgba(49,130,206,0.2);
+            border-color: #63b3ed;
+        }
+        .layer-btn.active[data-layer="message"] {
+            background: rgba(56,161,105,0.2);
+            border-color: #68d391;
+        }
+
+        .layer-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .layer-color.system { background: linear-gradient(135deg, #4a5568, #2d3748); }
+        .layer-color.memory { background: linear-gradient(135deg, #805ad5, #553c9a); }
+        .layer-color.conversation { background: linear-gradient(135deg, #3182ce, #2c5282); }
+        .layer-color.message { background: linear-gradient(135deg, #38a169, #276749); }
+
+        .layer-btn-info h3 {
+            font-size: 15px;
+            font-weight: 500;
+            color: #e8e8ed;
+        }
+
+        .layer-btn-info p {
+            font-size: 12px;
+            color: #8888a0;
+            font-weight: 300;
+            margin-top: 2px;
+        }
+
+        .click-hint {
+            font-size: 11px;
+            color: #666680;
+            text-align: center;
+            margin-bottom: 16px;
+            font-style: italic;
+        }
+
+        /* Dynamic detail panel */
+        .detail-panel {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .detail-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .detail-header .layer-color {
+            width: 20px;
+            height: 20px;
+        }
+
+        .detail-header h3 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .detail-header[data-layer="system"] h3 { color: #a0aec0; }
+        .detail-header[data-layer="memory"] h3 { color: #b794f4; }
+        .detail-header[data-layer="conversation"] h3 { color: #63b3ed; }
+        .detail-header[data-layer="message"] h3 { color: #68d391; }
+
+        .detail-section {
+            margin-bottom: 14px;
+        }
+
+        .detail-section h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            color: #8888a0;
+        }
+
+        .detail-section p {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #c8c8d8;
+            font-weight: 300;
+        }
+
+        .detail-section.aligned h4 { color: #68d391; }
+        .detail-section.misaligned h4 { color: #fc8181; }
+
+        .detail-section.aligned {
+            background: rgba(104,211,145,0.08);
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 3px solid rgba(104,211,145,0.4);
+        }
+
+        .detail-section.misaligned {
+            background: rgba(252,129,129,0.08);
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 3px solid rgba(252,129,129,0.4);
+        }
+
+        .context-badge {
+            margin-left: auto;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .context-badge.aligned {
+            background: rgba(104,211,145,0.2);
+            color: #68d391;
+        }
+
+        .context-badge.misaligned {
+            background: rgba(252,129,129,0.2);
+            color: #fc8181;
+        }
+
+        .detail-example {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            background: rgba(168,208,255,0.08);
+            border-radius: 8px;
+            border-left: 3px solid rgba(168,208,255,0.3);
+        }
+
+        .detail-example h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            color: #a8d0ff;
+        }
+
+        .detail-example p {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #c8c8d8;
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        .detail-tip {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            background: rgba(236,201,75,0.1);
+            border-radius: 8px;
+            border-left: 3px solid rgba(236,201,75,0.4);
+        }
+
+        .detail-tip h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 8px;
+            color: #ecc94b;
+        }
+
+        .detail-tip p {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #c8c8d8;
+            font-weight: 300;
+        }
+
+        /* Default state content */
+        .default-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #666680;
+        }
+
+        .default-content svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+
+        .default-content p {
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* Comparison columns */
+        .comparison-area {
+            flex: 1;
+            display: flex;
+            gap: 40px;
+        }
+
+        .scenario {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scenario-header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .scenario-header h2 {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .scenario-header.aligned h2 { color: #68d391; }
+        .scenario-header.misaligned h2 { color: #fc8181; }
+
+        .scenario-header p {
+            font-size: 14px;
+            color: #8888a0;
+        }
+
+        /* Filter visualization */
+        .filter-stack {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .probability-source {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(180deg, rgba(168,208,255,0.15) 0%, rgba(168,208,255,0.05) 100%);
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #a8d0ff;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(168,208,255,0.2);
+            border-bottom: none;
+        }
+
+        .filter-container {
+            width: 100%;
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-layer {
+            position: relative;
+            height: 96px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .filter-layer:hover {
+            filter: brightness(1.15);
+        }
+
+        .filter-layer.highlighted {
+            filter: brightness(1.3);
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.1);
+        }
+
+        .filter-layer .label {
+            position: absolute;
+            left: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            transition: opacity 0.25s ease;
+        }
+
+        .filter-layer.highlighted .label {
+            opacity: 1;
+        }
+
+        .filter-layer.system { 
+            background: linear-gradient(180deg, rgba(74,85,104,0.3) 0%, rgba(74,85,104,0.15) 100%); 
+        }
+        .filter-layer.system .label { color: #a0aec0; }
+
+        .filter-layer.memory { 
+            background: linear-gradient(180deg, rgba(128,90,213,0.3) 0%, rgba(128,90,213,0.15) 100%); 
+        }
+        .filter-layer.memory .label { color: #b794f4; }
+
+        .filter-layer.conversation { 
+            background: linear-gradient(180deg, rgba(49,130,206,0.3) 0%, rgba(49,130,206,0.15) 100%); 
+        }
+        .filter-layer.conversation .label { color: #63b3ed; }
+
+        .filter-layer.message { 
+            background: linear-gradient(180deg, rgba(56,161,105,0.3) 0%, rgba(56,161,105,0.15) 100%); 
+        }
+        .filter-layer.message .label { color: #68d391; }
+
+        /* Flow visualization */
+        .flow-beam {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        /* Aligned flow */
+        .aligned .flow-beam {
+            background: linear-gradient(180deg, 
+                rgba(104,211,145,0.1) 0%,
+                rgba(104,211,145,0.25) 100%
+            );
+        }
+
+        .aligned .filter-layer.system .flow-beam { width: 70%; left: 15%; }
+        .aligned .filter-layer.memory .flow-beam { width: 55%; left: 22.5%; }
+        .aligned .filter-layer.conversation .flow-beam { width: 42%; left: 29%; }
+        .aligned .filter-layer.message .flow-beam { width: 30%; left: 35%; }
+
+        /* Misaligned flow - show fragmentation */
+        .misaligned .flow-beam {
+            background: linear-gradient(180deg, 
+                rgba(252,129,129,0.08) 0%,
+                rgba(252,129,129,0.15) 100%
+            );
+        }
+
+        .misaligned .filter-layer.system .flow-beam { width: 70%; left: 15%; }
+        .misaligned .filter-layer.memory .flow-beam { width: 60%; left: 25%; }
+        .misaligned .filter-layer.conversation .flow-beam { width: 65%; left: 10%; }
+        .misaligned .filter-layer.message .flow-beam { width: 55%; left: 30%; }
+
+        /* Conflict indicators for misaligned */
+        .conflict-indicator {
+            position: absolute;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #fc8181;
+            opacity: 0.9;
+        }
+
+        .conflict-indicator svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Arrow indicators */
+        .direction-arrow {
+            position: absolute;
+            right: 50px;
+            width: 24px;
+            height: 24px;
+            opacity: 0.6;
+        }
+
+        .aligned .direction-arrow {
+            color: #68d391;
+        }
+
+        .misaligned .direction-arrow {
+            color: #fc8181;
+        }
+
+        /* Output zone */
+        .output-zone {
+            width: 100%;
+            height: 120px;
+            border-radius: 0 0 12px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-top: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .aligned .output-zone {
+            background: linear-gradient(180deg, rgba(56,161,105,0.15) 0%, rgba(56,161,105,0.05) 100%);
+        }
+
+        .misaligned .output-zone {
+            background: linear-gradient(180deg, rgba(252,129,129,0.1) 0%, rgba(252,129,129,0.03) 100%);
+        }
+
+        .output-distribution {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 3px;
+            height: 50px;
+            margin-bottom: 12px;
+        }
+
+        .dist-bar {
+            width: 8px;
+            border-radius: 2px 2px 0 0;
+            transition: height 0.3s ease;
+        }
+
+        /* Aligned distribution - focused peak */
+        .aligned .dist-bar { background: rgba(104,211,145,0.6); }
+        .aligned .dist-bar:nth-child(1) { height: 8px; }
+        .aligned .dist-bar:nth-child(2) { height: 14px; }
+        .aligned .dist-bar:nth-child(3) { height: 24px; }
+        .aligned .dist-bar:nth-child(4) { height: 38px; }
+        .aligned .dist-bar:nth-child(5) { height: 50px; }
+        .aligned .dist-bar:nth-child(6) { height: 50px; }
+        .aligned .dist-bar:nth-child(7) { height: 38px; }
+        .aligned .dist-bar:nth-child(8) { height: 24px; }
+        .aligned .dist-bar:nth-child(9) { height: 14px; }
+        .aligned .dist-bar:nth-child(10) { height: 8px; }
+
+        /* Misaligned distribution - scattered */
+        .misaligned .dist-bar { background: rgba(252,129,129,0.5); }
+        .misaligned .dist-bar:nth-child(1) { height: 22px; }
+        .misaligned .dist-bar:nth-child(2) { height: 18px; }
+        .misaligned .dist-bar:nth-child(3) { height: 28px; }
+        .misaligned .dist-bar:nth-child(4) { height: 20px; }
+        .misaligned .dist-bar:nth-child(5) { height: 32px; }
+        .misaligned .dist-bar:nth-child(6) { height: 25px; }
+        .misaligned .dist-bar:nth-child(7) { height: 30px; }
+        .misaligned .dist-bar:nth-child(8) { height: 16px; }
+        .misaligned .dist-bar:nth-child(9) { height: 24px; }
+        .misaligned .dist-bar:nth-child(10) { height: 20px; }
+
+        .output-label {
+            font-size: 13px;
+            font-weight: 400;
+        }
+
+        .aligned .output-label { color: #68d391; }
+        .misaligned .output-label { color: #fc8181; }
+
+        /* Takeaway boxes */
+        .takeaway {
+            margin-top: 16px;
+            padding: 16px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .aligned .takeaway {
+            background: rgba(104,211,145,0.1);
+            border: 1px solid rgba(104,211,145,0.2);
+            color: #9ae6b4;
+        }
+
+        .misaligned .takeaway {
+            background: rgba(252,129,129,0.1);
+            border: 1px solid rgba(252,129,129,0.2);
+            color: #feb2b2;
+        }
+
+        .takeaway strong {
+            font-weight: 500;
+        }
+
+        /* Divider */
+        .scenario-divider {
+            width: 1px;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                rgba(255,255,255,0.15) 20%, 
+                rgba(255,255,255,0.15) 80%, 
+                transparent 100%
+            );
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <header class="header">
+                <h1>Context Shapes Probability</h1>
+                <p class="subtitle">A mental model for AI chat interfaces — <em>curate context to maximize P(desired output)</em></p>
+            </header>
+
+            <div class="main-content">
+                
+                <!-- Left column: Model explanation -->
+                <div class="model-column">
+                    <div class="concept-box">
+                        <h2>The Core Idea</h2>
+                        <p>Every response is <strong>sampled from a probability distribution</strong>. All available context shapes that distribution. Your job: curate context so probability mass concentrates on outputs you want.</p>
+                    </div>
+
+                    <p class="click-hint">Click layers in the diagrams to see aligned vs misaligned effects →</p>
+
+                    <div class="layer-selector">
+                        <div class="layer-btn" data-layer="system">
+                            <div class="layer-color system"></div>
+                            <div class="layer-btn-info">
+                                <h3>System</h3>
+                                <p>Date, capabilities, base rules</p>
+                            </div>
+                        </div>
+                        <div class="layer-btn" data-layer="memory">
+                            <div class="layer-color memory"></div>
+                            <div class="layer-btn-info">
+                                <h3>Memory</h3>
+                                <p>Learned patterns about you</p>
+                            </div>
+                        </div>
+                        <div class="layer-btn" data-layer="conversation">
+                            <div class="layer-color conversation"></div>
+                            <div class="layer-btn-info">
+                                <h3>Conversation</h3>
+                                <p>This session's history</p>
+                            </div>
+                        </div>
+                        <div class="layer-btn" data-layer="message">
+                            <div class="layer-color message"></div>
+                            <div class="layer-btn-info">
+                                <h3>Your Message</h3>
+                                <p>The current instruction</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic detail panel -->
+                    <div class="detail-panel">
+                        <!-- Default state -->
+                        <div class="detail-content active" id="default-detail">
+                            <div class="default-content">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
+                                </svg>
+                                <p>Click a layer in either diagram<br/>to learn how it shapes probability</p>
+                            </div>
+                        </div>
+
+                        <!-- System - Aligned -->
+                        <div class="detail-content" id="system-aligned-detail">
+                            <div class="detail-header" data-layer="system">
+                                <div class="layer-color system"></div>
+                                <h3>System Context</h3>
+                                <span class="context-badge aligned">Aligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The foundational layer: current date, platform capabilities, base behavioral rules. Largely invisible to users—you can't edit it, but it's always there.</p>
+                            </div>
+                            <div class="detail-section aligned">
+                                <h4>When Aligned ✓</h4>
+                                <p>Your request fits within system capabilities. Probability flows naturally toward valid, well-formed outputs the system can actually produce.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Asking for a code explanation when the system has coding capabilities → high probability of accurate, helpful response.</p>
+                            </div>
+                        </div>
+
+                        <!-- System - Misaligned -->
+                        <div class="detail-content" id="system-misaligned-detail">
+                            <div class="detail-header" data-layer="system">
+                                <div class="layer-color system"></div>
+                                <h3>System Context</h3>
+                                <span class="context-badge misaligned">Misaligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The foundational layer: current date, platform capabilities, base behavioral rules. Largely invisible to users—you can't edit it, but it's always there.</p>
+                            </div>
+                            <div class="detail-section misaligned">
+                                <h4>When Misaligned ✗</h4>
+                                <p>Asking for things outside capabilities (real-time data without search tools, actions it can't take). Probability spreads across refusals, workarounds, or hallucinated answers.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Asking "What's the current stock price?" without web search enabled → probability splits between declining, guessing, or giving stale data.</p>
+                            </div>
+                        </div>
+
+                        <!-- Memory - Aligned -->
+                        <div class="detail-content" id="memory-aligned-detail">
+                            <div class="detail-header" data-layer="memory">
+                                <div class="layer-color memory"></div>
+                                <h3>Memory</h3>
+                                <span class="context-badge aligned">Aligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>Persistent patterns learned about you across sessions—your preferences, background, communication style, past projects. Carries forward even when you start new conversations.</p>
+                            </div>
+                            <div class="detail-section aligned">
+                                <h4>When Aligned ✓</h4>
+                                <p>Memory matches your current intent. If it knows you prefer concise answers and you ask for a summary, that prior knowledge focuses probability on brevity.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Memory knows you're a Python developer. You ask about sorting algorithms → explanations naturally use Python syntax without you asking.</p>
+                            </div>
+                        </div>
+
+                        <!-- Memory - Misaligned -->
+                        <div class="detail-content" id="memory-misaligned-detail">
+                            <div class="detail-header" data-layer="memory">
+                                <div class="layer-color memory"></div>
+                                <h3>Memory</h3>
+                                <span class="context-badge misaligned">Misaligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>Persistent patterns learned about you across sessions—your preferences, background, communication style, past projects. Carries forward even when you start new conversations.</p>
+                            </div>
+                            <div class="detail-section misaligned">
+                                <h4>When Misaligned ✗</h4>
+                                <p>Outdated or context-inappropriate memory. If memory assumes you're always coding but today you're writing poetry, it may inject technical framing that dilutes your creative output.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Memory learned you like detailed explanations. Today you need a quick yes/no answer → responses are longer than helpful.</p>
+                            </div>
+                        </div>
+
+                        <!-- Conversation - Aligned -->
+                        <div class="detail-content" id="conversation-aligned-detail">
+                            <div class="detail-header" data-layer="conversation">
+                                <div class="layer-color conversation"></div>
+                                <h3>Conversation History</h3>
+                                <span class="context-badge aligned">Aligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The accumulated back-and-forth in this session. Every exchange adds to it. You control it by continuing, steering, correcting—or starting fresh.</p>
+                            </div>
+                            <div class="detail-section aligned">
+                                <h4>When Aligned ✓</h4>
+                                <p>A focused conversation on one topic builds reinforcing context. Each exchange narrows probability toward coherent continuation of the established direction.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>You've been refining a cover letter for 5 exchanges. Each new request builds on shared understanding of the role and your background.</p>
+                            </div>
+                        </div>
+
+                        <!-- Conversation - Misaligned -->
+                        <div class="detail-content" id="conversation-misaligned-detail">
+                            <div class="detail-header" data-layer="conversation">
+                                <div class="layer-color conversation"></div>
+                                <h3>Conversation History</h3>
+                                <span class="context-badge misaligned">Misaligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The accumulated back-and-forth in this session. Every exchange adds to it. You control it by continuing, steering, correcting—or starting fresh.</p>
+                            </div>
+                            <div class="detail-section misaligned">
+                                <h4>When Misaligned ✗</h4>
+                                <p>A wandering conversation with topic pivots leaves competing signals. The model may reference earlier context that's no longer relevant, pulling probability away from what you want now.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>You discussed dinner recipes, then pivoted to debugging code. The model might still be primed for casual, food-related language.</p>
+                            </div>
+                            <div class="detail-tip">
+                                <h4>Strategy</h4>
+                                <p>Start a new conversation when switching topics to clear competing context.</p>
+                            </div>
+                        </div>
+
+                        <!-- Message - Aligned -->
+                        <div class="detail-content" id="message-aligned-detail">
+                            <div class="detail-header" data-layer="message">
+                                <div class="layer-color message"></div>
+                                <h3>Your Current Message</h3>
+                                <span class="context-badge aligned">Aligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The immediate instruction—what you type right now. It's the final filter before output, closest to the sampling moment. You have complete control here.</p>
+                            </div>
+                            <div class="detail-section aligned">
+                                <h4>When Aligned ✓</h4>
+                                <p>A clear, specific message that matches upstream context has maximum leverage. All layers point the same direction—probability concentrates sharply on your target.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Clear request + supportive history + relevant memory = probability mass concentrated on exactly what you want.</p>
+                            </div>
+                        </div>
+
+                        <!-- Message - Misaligned -->
+                        <div class="detail-content" id="message-misaligned-detail">
+                            <div class="detail-header" data-layer="message">
+                                <div class="layer-color message"></div>
+                                <h3>Your Current Message</h3>
+                                <span class="context-badge misaligned">Misaligned</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The immediate instruction—what you type right now. It's the final filter before output, closest to the sampling moment. You have complete control here.</p>
+                            </div>
+                            <div class="detail-section misaligned">
+                                <h4>When Misaligned ✗</h4>
+                                <p>Even a perfect message can't fully overcome noisy upstream context. It's the final filter, not a magic override. If conversation history contradicts you, probability stays diffuse.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>"Be concise" in your message, but 10 prior exchanges were verbose → the model is pulled between your instruction and established pattern.</p>
+                            </div>
+                            <div class="detail-tip">
+                                <h4>Strategy</h4>
+                                <p>If your message keeps getting overridden by prior context, start fresh rather than fighting the history.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison area -->
+                <div class="comparison-area">
+                    
+                    <!-- Aligned scenario -->
+                    <div class="scenario aligned">
+                        <div class="scenario-header aligned">
+                            <h2>✓ Aligned Context</h2>
+                            <p>Layers reinforce each other</p>
+                        </div>
+                        
+                        <div class="filter-stack">
+                            <div class="probability-source">ALL POSSIBLE OUTPUTS</div>
+                            
+                            <div class="filter-container">
+                                <div class="filter-layer system" data-layer="system" data-scenario="aligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">System</span>
+                                    <svg class="direction-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </div>
+                                <div class="filter-layer memory" data-layer="memory" data-scenario="aligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">Memory</span>
+                                    <svg class="direction-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </div>
+                                <div class="filter-layer conversation" data-layer="conversation" data-scenario="aligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">Conversation</span>
+                                    <svg class="direction-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </div>
+                                <div class="filter-layer message" data-layer="message" data-scenario="aligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">Your Message</span>
+                                    <svg class="direction-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="output-zone">
+                                <div class="output-distribution">
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                </div>
+                                <span class="output-label">Focused distribution → Predictable output</span>
+                            </div>
+                        </div>
+
+                        <div class="takeaway">
+                            <strong>Result:</strong> Probability mass is <em>compressed</em> around a narrow band of responses.<br>
+                            The model doesn’t need to guess your intent — every layer reinforces it.<br><br>
+                            <em>Fewer competing signals → higher reliability → less prompt fighting</em>
+                        </div>
+                    </div>
+
+                    <div class="scenario-divider"></div>
+
+                    <!-- Misaligned scenario -->
+                    <div class="scenario misaligned">
+                        <div class="scenario-header misaligned">
+                            <h2>✗ Misaligned Context</h2>
+                            <p>Layers pull in different directions</p>
+                        </div>
+                        
+                        <div class="filter-stack">
+                            <div class="probability-source">ALL POSSIBLE OUTPUTS</div>
+                            
+                            <div class="filter-container">
+                                <div class="filter-layer system" data-layer="system" data-scenario="misaligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">System</span>
+                                    <svg class="direction-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </div>
+                                <div class="filter-layer memory" data-layer="memory" data-scenario="misaligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">Memory</span>
+                                    <span class="conflict-indicator">
+                                        <svg viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2L2 22h20L12 2zm0 4l7.5 14h-15L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
+                                        </svg>
+                                        conflicts
+                                    </span>
+                                </div>
+                                <div class="filter-layer conversation" data-layer="conversation" data-scenario="misaligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">Conversation</span>
+                                    <span class="conflict-indicator">
+                                        <svg viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 2L2 22h20L12 2zm0 4l7.5 14h-15L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
+                                        </svg>
+                                        off-topic history
+                                    </span>
+                                </div>
+                                <div class="filter-layer message" data-layer="message" data-scenario="misaligned">
+                                    <div class="flow-beam"></div>
+                                    <span class="label">Your Message</span>
+                                    <svg class="direction-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="output-zone">
+                                <div class="output-distribution">
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                    <div class="dist-bar"></div>
+                                </div>
+                                <span class="output-label">Diffuse distribution → Unpredictable output</span>
+                            </div>
+                        </div>
+
+                        <div class="takeaway">
+                            <strong>Result:</strong> Probability mass is <em>fragmented</em> across multiple interpretations.<br>
+                            Even a good prompt can’t fully overcome conflicting upstream context.<br><br>
+                            <em>The model isn’t “confused” — it’s responding rationally to mixed signals</em>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Interactive layer selection
+        const layerBtns = document.querySelectorAll('.layer-btn');
+        const filterLayers = document.querySelectorAll('.filter-layer');
+        const detailContents = document.querySelectorAll('.detail-content');
+
+        let currentLayer = null;
+        let currentScenario = null;
+
+        function selectLayer(layerName, scenario) {
+            currentLayer = layerName;
+            currentScenario = scenario;
+
+            // Update button states
+            layerBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.layer === layerName);
+            });
+
+            // Update filter layer highlights - highlight same layer in both diagrams
+            filterLayers.forEach(layer => {
+                layer.classList.toggle('highlighted', layer.dataset.layer === layerName);
+            });
+
+            // Update detail panel
+            detailContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const targetDetail = document.getElementById(`${layerName}-${scenario}-detail`);
+            if (targetDetail) {
+                targetDetail.classList.add('active');
+            }
+        }
+
+        // Add click handlers to layer buttons (default to aligned)
+        layerBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                selectLayer(btn.dataset.layer, 'aligned');
+            });
+        });
+
+        // Add click handlers to filter layers in diagrams
+        filterLayers.forEach(layer => {
+            layer.addEventListener('click', () => {
+                selectLayer(layer.dataset.layer, layer.dataset.scenario);
+            });
+        });
+    </script>
+</body>
+</html>

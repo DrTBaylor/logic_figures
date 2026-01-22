@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Git Basics: Pull, Commit, Push</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f172a 0%, #0a192f 100%);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 16:9 Viewport Container */
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fixed 1920x1080 Design Surface */
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            padding: 24px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 38px;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            font-size: 18px;
+            margin-bottom: 18px;
+        }
+
+        /* Key Concepts Section */
+        .key-concepts {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 18px;
+        }
+
+        .concept {
+            background: rgba(255,255,255,0.05);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border-left: 5px solid;
+            font-size: 16px;
+        }
+
+        .concept.git { border-color: #f7931e; }
+        .concept.github { border-color: #6e5494; }
+        .concept.box { border-color: #0061d5; }
+
+        .concept strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 18px;
+        }
+
+        .concept span {
+            color: #90a4ae;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .controls button {
+            background: #1a237e;
+            color: #fff;
+            border: 2px solid #5c6bc0;
+            border-radius: 12px;
+            padding: 12px 26px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 18px;
+            transition: all 0.15s ease;
+            box-shadow: 0 0 12px rgba(79, 195, 247, 0.2);
+            min-width: 120px;
+        }
+
+        .controls button:hover {
+            border-color: #4fc3f7;
+            transform: translateY(-2px);
+        }
+
+        .controls .commit-btn {
+            background: linear-gradient(145deg, #f9a825, #ff8f00);
+            color: #0b0b0b;
+            border-color: #ffca28;
+        }
+
+        .controls .pull-btn {
+            background: linear-gradient(145deg, #0277bd, #01579b);
+            border-color: #4fc3f7;
+        }
+
+        .controls .push-btn {
+            background: linear-gradient(145deg, #2e7d32, #1b5e20);
+            border-color: #81c784;
+        }
+
+        .controls .reset-btn {
+            background: #0d1b2a;
+            color: #90a4ae;
+            border-color: #546e7a;
+        }
+
+        /* Status Row */
+        .status-row {
+            display: grid;
+            grid-template-columns: auto auto 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .status-card {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 10px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-title {
+            color: #90a4ae;
+            font-size: 16px;
+        }
+
+        .status-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ffb74d;
+        }
+
+        .status-message-card {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 10px;
+            padding: 12px 18px;
+        }
+
+        .status-message {
+            color: #cfd8dc;
+            font-size: 17px;
+        }
+
+        /* Three Column Layout */
+        .three-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            flex: 1;
+            min-height: 0;
+            margin-bottom: 16px;
+        }
+
+        .node-box {
+            background: #0d1b2a;
+            border: 3px solid #546e7a;
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .node-box.workspace { border-color: #0061d5; }
+        .node-box.local { border-color: #f7931e; }
+        .node-box.remote { border-color: #6e5494; }
+
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .node-title {
+            font-weight: 700;
+            font-size: 22px;
+            color: #e0e0e0;
+        }
+
+        .tech-badge {
+            font-size: 13px;
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .tech-badge.box { background: #0061d5; }
+        .tech-badge.git { background: #f7931e; color: #000; }
+        .tech-badge.github { background: #6e5494; }
+
+        .node-sub {
+            color: #90a4ae;
+            font-size: 15px;
+            margin-bottom: 14px;
+        }
+
+        .part-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        /* Part Cards with Checkboxes */
+        .part-card {
+            background: rgba(84, 110, 122, 0.15);
+            border: 2px solid #546e7a;
+            color: #e0e0e0;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .part-card:hover:not(.not-present):not(.committed) {
+            border-color: #4fc3f7;
+        }
+
+        .part-card.not-present {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .part-card.ready {
+            border-color: #ffb74d;
+            color: #ffb74d;
+        }
+
+        .part-card.committed {
+            border-color: #81c784;
+            color: #81c784;
+            background: rgba(76, 175, 80, 0.15);
+            cursor: default;
+        }
+
+        .check-box {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #546e7a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: #0d1b2a;
+            background: #0a1628;
+            flex-shrink: 0;
+        }
+
+        .check-box.filled {
+            background: #81c784;
+            border-color: #81c784;
+            color: #0d1b2a;
+        }
+
+        /* Arrow Section */
+        .arrow-section {
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+            margin-bottom: 16px;
+        }
+
+        .arrow-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .arrow-label {
+            font-size: 15px;
+            color: #607d8b;
+        }
+
+        .arrow {
+            font-size: 32px;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .arrow.active {
+            opacity: 1;
+            animation: pulse 0.6s ease;
+        }
+
+        .arrow.commit { color: #ffb74d; }
+        .arrow.push { color: #81c784; }
+        .arrow.pull { color: #4fc3f7; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            color: #607d8b;
+            font-size: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        .footer-note strong {
+            color: #e74c3c;
+        }
+
+        /* Debug Info */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #4fc3f7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <h1>🔀 Student Git Basics: Pull, Commit, Push</h1>
+            <p class="subtitle">Instructor creates your remote repo. You pull it, work locally, then push back to submit.</p>
+
+            <!-- Key Concepts -->
+            <div class="key-concepts">
+                <div class="concept box">
+                    <strong>📁 Box Drive</strong>
+                    <span>Your files sync to cloud storage</span>
+                </div>
+                <div class="concept git">
+                    <strong>🔶 Git</strong>
+                    <span>Tracks changes in .git folder</span>
+                </div>
+                <div class="concept github">
+                    <strong>🐙 GitHub</strong>
+                    <span>Hosts repo online (submission)</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="pull-btn" id="pullBtn">⬇️ Pull</button>
+                <button class="commit-btn" id="commitBtn">💾 Commit</button>
+                <button class="push-btn" id="pushBtn">⬆️ Push</button>
+                <button class="reset-btn" id="resetBtn">🔄 Reset</button>
+            </div>
+
+            <!-- Status Row -->
+            <div class="status-row">
+                <div class="status-card">
+                    <span class="status-title">Local commits:</span>
+                    <span class="status-value" id="localCount">0</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-title">Submitted:</span>
+                    <span class="status-value" id="remoteCount">0</span>
+                </div>
+                <div class="status-message-card">
+                    <div class="status-message" id="statusMessage">
+                        Instructor repo has Parts 1-3. Pull to get them into your workspace.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Three Column Layout -->
+            <div class="three-columns">
+                <!-- Workspace -->
+                <div class="node-box workspace">
+                    <div class="node-header">
+                        <span class="node-title">📂 Your Workspace</span>
+                        <span class="tech-badge box">Box Drive</span>
+                    </div>
+                    <div class="node-sub">Files you edit in VS Code / Vivado</div>
+                    <div class="part-list" id="workspaceCards"></div>
+                </div>
+
+                <!-- Local Repo -->
+                <div class="node-box local">
+                    <div class="node-header">
+                        <span class="node-title">💾 Local Repository</span>
+                        <span class="tech-badge git">Git</span>
+                    </div>
+                    <div class="node-sub">Commits saved on your computer</div>
+                    <div class="part-list" id="localList"></div>
+                </div>
+
+                <!-- Remote Repo -->
+                <div class="node-box remote">
+                    <div class="node-header">
+                        <span class="node-title">☁️ Remote Repository</span>
+                        <span class="tech-badge github">GitHub</span>
+                    </div>
+                    <div class="node-sub">Where you submit for grading</div>
+                    <div class="part-list" id="remoteList"></div>
+                </div>
+            </div>
+
+            <!-- Arrows -->
+            <div class="arrow-section">
+                <div class="arrow-group">
+                    <span class="arrow-label">GitHub → Local → Workspace</span>
+                    <span class="arrow pull" id="arrow-pull">⬅️ PULL</span>
+                </div>
+                <div class="arrow-group">
+                    <span class="arrow-label">Workspace → Local</span>
+                    <span class="arrow commit" id="arrow-commit">➡️ COMMIT</span>
+                </div>
+                <div class="arrow-group">
+                    <span class="arrow-label">Local → GitHub</span>
+                    <span class="arrow push" id="arrow-push">➡️ PUSH</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer-note">
+                <strong>⚠️ Critical:</strong> You must <strong>Push</strong> to GitHub to submit for grading. Box Drive is your safety net, but only GitHub submissions count!
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="debug-info" id="debugInfo"></div>
+
+    <script>
+        // ============================================
+        // HIGH-DPI AWARE AUTO-RESIZE SYSTEM
+        // ============================================
+        
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            const debugInfo = document.getElementById('debugInfo');
+            
+            const dpr = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+            
+            debugInfo.textContent = `DPR: ${dpr.toFixed(2)} | Scale: ${scale.toFixed(3)} | ${Math.round(containerWidth)}×${Math.round(containerHeight)}`;
+        }
+
+        function initializeResponsive() {
+            autoResize();
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(autoResize, 50);
+            });
+        }
+
+        // ============================================
+        // APPLICATION STATE & LOGIC
+        // ============================================
+        
+        const state = {
+            parts: [
+                { name: 'Part 1', status: 'remote' },
+                { name: 'Part 2', status: 'remote' },
+                { name: 'Part 3', status: 'remote' }
+            ]
+        };
+
+        const localCount = document.getElementById('localCount');
+        const remoteCount = document.getElementById('remoteCount');
+        const statusMessage = document.getElementById('statusMessage');
+        const workspaceCards = document.getElementById('workspaceCards');
+        const localList = document.getElementById('localList');
+        const remoteList = document.getElementById('remoteList');
+
+        const pullBtn = document.getElementById('pullBtn');
+        const commitBtn = document.getElementById('commitBtn');
+        const pushBtn = document.getElementById('pushBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function setMessage(text) {
+            statusMessage.textContent = text;
+        }
+
+        function updateCounts() {
+            const localCommitted = state.parts.filter((p) => p.status === 'committed' || p.status === 'submitted');
+            const remoteSubmitted = state.parts.filter((p) => p.status === 'submitted');
+            localCount.textContent = localCommitted.length;
+            remoteCount.textContent = remoteSubmitted.length;
+        }
+
+        function flashArrow(name) {
+            const arrow = document.getElementById(`arrow-${name}`);
+            if (!arrow) return;
+            arrow.classList.add('active');
+            setTimeout(() => arrow.classList.remove('active'), 600);
+        }
+
+        function renderWorkspace() {
+            workspaceCards.innerHTML = '';
+            state.parts.forEach((part) => {
+                const card = document.createElement('div');
+                card.className = 'part-card';
+                
+                const box = document.createElement('span');
+                box.className = 'check-box';
+                if (part.status === 'completed' || part.status === 'committed' || part.status === 'submitted') {
+                    box.classList.add('filled');
+                    box.textContent = 'X';
+                }
+                
+                const label = document.createElement('span');
+                label.textContent = part.name;
+                card.appendChild(box);
+                card.appendChild(label);
+
+                if (part.status === 'remote') {
+                    card.classList.add('not-present');
+                } else if (part.status === 'completed') {
+                    card.classList.add('ready');
+                } else if (part.status === 'committed' || part.status === 'submitted') {
+                    card.classList.add('committed');
+                }
+
+                card.addEventListener('click', () => {
+                    if (part.status !== 'pulled') return;
+                    part.status = 'completed';
+                    setMessage(`${part.name} is complete. Click Commit to save it to your local Git repo.`);
+                    renderAll();
+                });
+
+                workspaceCards.appendChild(card);
+            });
+        }
+
+        function renderLocalList() {
+            localList.innerHTML = '';
+            state.parts.forEach((part) => {
+                const card = document.createElement('div');
+                card.className = 'part-card';
+                const isInLocal = part.status !== 'remote';
+                const isCommitted = part.status === 'committed' || part.status === 'submitted';
+
+                if (!isInLocal) {
+                    card.classList.add('not-present');
+                } else if (isCommitted) {
+                    card.classList.add('committed');
+                }
+
+                const box = document.createElement('span');
+                box.className = 'check-box';
+                if (isCommitted) {
+                    box.classList.add('filled');
+                    box.textContent = 'X';
+                }
+
+                const label = document.createElement('span');
+                label.textContent = part.name;
+                card.appendChild(box);
+                card.appendChild(label);
+                localList.appendChild(card);
+            });
+        }
+
+        function renderRemoteList() {
+            remoteList.innerHTML = '';
+            state.parts.forEach((part) => {
+                const card = document.createElement('div');
+                card.className = 'part-card';
+                const isSubmitted = part.status === 'submitted';
+
+                if (isSubmitted) {
+                    card.classList.add('committed');
+                }
+
+                const box = document.createElement('span');
+                box.className = 'check-box';
+                if (isSubmitted) {
+                    box.classList.add('filled');
+                    box.textContent = 'X';
+                }
+
+                const label = document.createElement('span');
+                label.textContent = part.name;
+                card.appendChild(box);
+                card.appendChild(label);
+                remoteList.appendChild(card);
+            });
+        }
+
+        function renderAll() {
+            updateCounts();
+            renderWorkspace();
+            renderLocalList();
+            renderRemoteList();
+        }
+
+        pullBtn.addEventListener('click', () => {
+            const available = state.parts.filter((p) => p.status === 'remote');
+            if (available.length > 0) {
+                available.forEach((p) => { p.status = 'pulled'; });
+                setMessage(`Pulled! ${available.length} part(s) copied from GitHub to your workspace. Click a part to mark it complete.`);
+            } else {
+                setMessage('Pull: Your local repo is already synced with GitHub.');
+            }
+            flashArrow('pull');
+            renderAll();
+        });
+
+        commitBtn.addEventListener('click', () => {
+            const completedParts = state.parts.filter((p) => p.status === 'completed');
+            if (completedParts.length === 0) {
+                setMessage('Commit: Click a part in your workspace first to mark it complete.');
+                return;
+            }
+            completedParts.forEach((p) => { p.status = 'committed'; });
+            const names = completedParts.map(p => p.name).join(', ');
+            setMessage(`Committed! ${names} saved to local Git repo. Push to submit to GitHub.`);
+            flashArrow('commit');
+            renderAll();
+        });
+
+        pushBtn.addEventListener('click', () => {
+            const pending = state.parts.filter((p) => p.status === 'committed');
+            if (pending.length === 0) {
+                setMessage('Push: Nothing new to upload. Commit your completed work first.');
+                return;
+            }
+            pending.forEach((p) => { p.status = 'submitted'; });
+            setMessage(`Pushed! ${pending.length} part(s) uploaded to GitHub. Professor can now grade your work!`);
+            flashArrow('push');
+            renderAll();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            state.parts.forEach((p) => { p.status = 'remote'; });
+            setMessage('Reset! Instructor repo has Parts 1-3. Pull to get them into your workspace.');
+            renderAll();
+        });
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        initializeResponsive();
+        renderAll();
+    </script>
+</body>
+
+</html>

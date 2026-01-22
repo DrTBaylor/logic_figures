@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAND D Latch - Interactive</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: #e0e0e0;
+            overflow: hidden;
+            /* Contain within viewport */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            margin: 0 0 5px 0;
+            font-size: 1.4em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        /* Control Panels */
+        .controls-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .control-panel {
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-panel.d-panel {
+            border: 2px solid #ffeb3b;
+        }
+
+        .control-panel.en-panel {
+            border: 2px solid #4fc3f7;
+        }
+
+        .panel-title {
+            font-size: 1em;
+            font-weight: bold;
+            display: none;
+            /* Hide titles to save space */
+        }
+
+        .big-button {
+            width: auto;
+            flex: 1;
+            padding: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 0;
+        }
+
+        .big-button:active {
+            transform: scale(0.97);
+        }
+
+        .d-button {
+            background: linear-gradient(145deg, #f9a825, #ff8f00);
+            color: #000;
+        }
+
+        .d-button:hover {
+            background: linear-gradient(145deg, #ffca28, #ffa000);
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.4);
+        }
+
+        .d-button.active {
+            background: linear-gradient(145deg, #4caf50, #388e3c);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        }
+
+        .en-button {
+            background: linear-gradient(145deg, #0277bd, #01579b);
+            color: #fff;
+        }
+
+        .en-button:hover {
+            background: linear-gradient(145deg, #039be5, #0277bd);
+            box-shadow: 0 0 10px rgba(3, 169, 244, 0.4);
+        }
+
+        .en-button.active {
+            background: linear-gradient(145deg, #4caf50, #388e3c);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        }
+
+        .value-indicator {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: 0;
+            width: 30px;
+            text-align: center;
+        }
+
+        .value-indicator.high {
+            color: #4caf50;
+            text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+
+        .value-indicator.low {
+            color: #546e7a;
+        }
+
+        .gate-state-label {
+            font-size: 0.8em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .latch-state {
+            color: #90a4ae;
+        }
+
+        .latch-state.transparent {
+            color: #4caf50;
+        }
+
+        .latch-state.opaque {
+            color: #f44336;
+        }
+
+        /* Main Circuit Section */
+        .circuit-section {
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            border: 2px solid #7e57c2;
+            flex: 1;
+            /* Grow to fill space */
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            /* Important for flex overflow */
+        }
+
+        .circuit-title {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #7e57c2;
+            margin-bottom: 5px;
+            flex-shrink: 0;
+        }
+
+        .circuit-area {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 0;
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* SVG Elements */
+        .wire {
+            stroke: #37474f;
+            stroke-width: 4;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.2s;
+        }
+
+        .wire.high {
+            stroke: #4caf50;
+            filter: drop-shadow(0 0 3px rgba(76, 175, 80, 0.6));
+        }
+
+        .wire.low {
+            stroke: #37474f;
+            /* Dark grey for low */
+        }
+
+        .gate-body {
+            fill: #1a237e;
+            stroke: #5c6bc0;
+            stroke-width: 2;
+        }
+
+        .gate-symbol {
+            fill: #c5cae9;
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: 24px;
+            pointer-events: none;
+        }
+
+        .gate-label {
+            font-family: monospace;
+            font-size: 14px;
+            fill: #9fa8da;
+        }
+
+        .io-text {
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .pin-dot {
+            fill: #37474f;
+            transition: fill 0.2s;
+        }
+
+        .pin-dot.high {
+            fill: #4caf50;
+        }
+
+        .bubble {
+            fill: #1a237e;
+            stroke: #5c6bc0;
+            stroke-width: 2;
+        }
+
+        /* Timing Diagram and Logs */
+        .bottom-section {
+            display: flex;
+            gap: 10px;
+            height: 15vh;
+            /* Responsive height */
+            min-height: 120px;
+            max-height: 200px;
+            flex-shrink: 0;
+        }
+
+        .timing-section {
+            flex: 3;
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-section {
+            flex: 1;
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            color: #4fc3f7;
+            font-size: 0.9em;
+            margin: 0 0 5px 0;
+            font-weight: bold;
+        }
+
+        .waveform-container {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 5px;
+            overflow-x: hidden;
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .waveform-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0;
+            height: 18%;
+            /* Distribute height */
+        }
+
+        .waveform-label {
+            width: 45px;
+            font-weight: bold;
+            font-size: 0.75em;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        .waveform-track {
+            flex: 1;
+            height: 100%;
+            background: #151d33;
+            border-radius: 3px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+
+        .wave-seg {
+            width: 3px;
+            min-width: 3px;
+            margin-right: 1px;
+            background: #4caf50;
+            transition: height 0.1s;
+        }
+
+        .wave-seg.low {
+            height: 2px;
+            background: #37474f;
+        }
+
+        .wave-seg.high {
+            height: 100%;
+        }
+
+        .activity-log {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 5px;
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #1a237e;
+            color: #90a4ae;
+        }
+
+        .log-entry.highlight {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>NAND D Latch</h1>
+        <p class="subtitle">Gate-level interactive implementation using 4 NAND gates</p>
+
+        <!-- Controls -->
+        <div class="controls-section">
+            <div class="control-panel d-panel">
+                <button class="big-button d-button" id="btnD" onclick="toggleD()">D = 0</button>
+                <div class="value-indicator low" id="indD">0</div>
+            </div>
+
+            <div class="control-panel en-panel">
+                <button class="big-button en-button" id="btnEN" onclick="toggleEN()">EN = 0</button>
+                <div class="value-indicator low" id="indEN">0</div>
+                <div class="gate-state-label latch-state opaque" id="latchStateLabel">LATCHED (Holding)</div>
+            </div>
+        </div>
+
+        <!-- Circuit Diagram -->
+        <div class="circuit-section">
+            <div class="circuit-title">S'R" Latch Topology</div>
+            <div class="circuit-area">
+                <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
+                    <!-- Defs for arrowheads output -->
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"
+                            markerUnits="strokeWidth">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#37474f" />
+                        </marker>
+                    </defs>
+
+                    <!-- Wires Layer (Bottom) -->
+                    <!-- D Input Line -->
+                    <path d="M 50 120 L 150 120" class="wire" id="w_d_in" />
+                    <!-- D to Inverter -->
+                    <path d="M 120 120 L 120 380 L 150 380" class="wire" id="w_d_to_inv" />
+
+                    <!-- Inverter Output (NotD) -->
+                    <path d="M 210 380 L 250 380" class="wire" id="w_not_d" />
+
+                    <!-- EN Input Line -->
+                    <path d="M 50 250 L 230 250" class="wire" id="w_en_main" />
+                    <!-- EN split to upper/lower steering NANDs -->
+                    <path d="M 230 160 L 230 340" class="wire" id="w_en_split" />
+                    <path d="M 230 160 L 250 160" class="wire" id="w_en_top" />
+                    <path d="M 230 340 L 250 340" class="wire" id="w_en_bot" />
+
+                    <!-- D into Top Steering NAND (NAND1) -->
+                    <path d="M 150 120 L 250 120" class="wire" id="w_d_nand1" />
+
+                    <!-- NAND1 Output (S_bar) -->
+                    <path d="M 350 140 L 480 140" class="wire" id="w_s_bar" />
+                    <!-- NAND2 Output (R_bar) -->
+                    <path d="M 350 360 L 480 360" class="wire" id="w_r_bar" />
+
+                    <!-- S_bar into Top Latch NAND (NAND3) -->
+                    <path d="M 480 140 L 520 140" class="wire" id="w_nand3_in1" />
+                    <!-- R_bar into Bottom Latch NAND (NAND4) -->
+                    <path d="M 480 360 L 520 360" class="wire" id="w_nand4_in2" />
+
+                    <!-- LATCH FEEDBACK WIRES (Cross Coupling) -->
+                    <!-- Q Output (NAND3 Out) -->
+                    <path d="M 620 160 L 750 160" class="wire" id="w_q_out" />
+                    <!-- Q_bar Output (NAND4 Out) -->
+                    <path d="M 620 340 L 750 340" class="wire" id="w_q_bar_out" />
+
+                    <!-- Q feedback to NAND4 -->
+                    <path d="M 660 160 L 660 280 L 490 280 L 490 320 L 520 320" class="wire" id="w_fb_q" />
+                    <!-- Q_bar feedback to NAND3 -->
+                    <path d="M 660 340 L 660 220 L 490 220 L 490 180 L 520 180" class="wire" id="w_fb_q_bar" />
+
+
+                    <!-- Components Layer -->
+
+                    <!-- Inverter (for D_bar) -->
+                    <!-- Body -->
+                    <path d="M 150 360 L 200 380 L 150 400 Z" class="gate-body" />
+                    <circle cx="205" cy="380" r="5" class="bubble" />
+                    <text x="160" y="385" class="gate-label" font-size="20" fill="white">INV</text>
+
+                    <!-- NAND1 (Top Steering) -->
+                    <path d="M 250 100 L 300 100 A 40 40 0 1 1 300 180 L 250 180 Z" class="gate-body" />
+                    <circle cx="345" cy="140" r="5" class="bubble" />
+                    <text x="260" y="145" class="gate-symbol">&amp;</text>
+                    <text x="265" y="165" class="gate-label">NAND1</text>
+
+                    <!-- NAND2 (Bottom Steering) -->
+                    <path d="M 250 320 L 300 320 A 40 40 0 1 1 300 400 L 250 400 Z" class="gate-body" />
+                    <circle cx="345" cy="360" r="5" class="bubble" />
+                    <text x="260" y="365" class="gate-symbol">&amp;</text>
+                    <text x="265" y="385" class="gate-label">NAND2</text>
+
+                    <!-- NAND3 (Top Latch) -->
+                    <path d="M 520 120 L 570 120 A 40 40 0 1 1 570 200 L 520 200 Z" class="gate-body" />
+                    <circle cx="615" cy="160" r="5" class="bubble" />
+                    <text x="530" y="165" class="gate-symbol">&amp;</text>
+                    <text x="535" y="185" class="gate-label">NAND3</text>
+
+                    <!-- NAND4 (Bottom Latch) -->
+                    <path d="M 520 300 L 570 300 A 40 40 0 1 1 570 380 L 520 380 Z" class="gate-body" />
+                    <circle cx="615" cy="340" r="5" class="bubble" />
+                    <text x="530" y="345" class="gate-symbol">&amp;</text>
+                    <text x="535" y="365" class="gate-label">NAND4</text>
+
+                    <!-- Labels -->
+                    <text x="30" y="125" fill="#ffeb3b" class="io-text">D</text>
+                    <text x="30" y="255" fill="#4fc3f7" class="io-text">EN</text>
+
+                    <text x="370" y="130" fill="#9fa8da" class="gate-label">S_bar</text>
+                    <text x="370" y="350" fill="#9fa8da" class="gate-label">R_bar</text>
+
+                    <text x="760" y="165" fill="#ff9800" class="io-text">Q</text>
+                    <text x="760" y="345" fill="#e0e0e0" class="io-text">Q_bar</text>
+
+                </svg>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="timing-section">
+                <div class="section-header">Live Timing</div>
+                <div class="waveform-container" id="waveContainer">
+                    <!-- Tracks generated by JS -->
+                </div>
+            </div>
+            <div class="log-section">
+                <div class="section-header">Logic Log</div>
+                <div class="activity-log" id="activityLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let state = {
+            D: 0,
+            EN: 0,
+            D_bar: 1,
+            S_bar: 1,
+            R_bar: 1,
+            Q: 0,
+            Q_bar: 1
+        };
+
+        // UI Config
+        const MAX_HISTORY = 200;
+        let history = {
+            D: [], EN: [], S_bar: [], R_bar: [], Q: []
+        };
+        let isRunning = true;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initWaveforms();
+            updateSim();
+            setInterval(tick, 50); // 20fps update for waveform scrolling
+        });
+
+        // Controls
+        function toggleD() {
+            state.D = state.D ? 0 : 1;
+            updateSim();
+        }
+
+        function toggleEN() {
+            state.EN = state.EN ? 0 : 1;
+            updateSim();
+        }
+
+        // Logic Engine
+        function updateSim() {
+            // 1. Inverter
+            state.D_bar = state.D ? 0 : 1;
+
+            // 2. Steering NANDs
+            state.S_bar = nand(state.D, state.EN);
+            state.R_bar = nand(state.D_bar, state.EN);
+
+            // 3. SR Latch Logic (Iterative to resolve feedback)
+            // If S_bar=0, Set Q=1. If R_bar=0, Set Q=0 (Q_bar=1).
+            // If both 1, Hold. If both 0 (illegal in this D-latch design), unstable/11.
+
+            // Standard NAND Latch Table:
+            // S_bar=0, R_bar=1 -> Q=1, Qb=0
+            // S_bar=1, R_bar=0 -> Q=0, Qb=1
+            // S_bar=1, R_bar=1 -> Hold
+
+            let prevQ = state.Q;
+            let prevQb = state.Q_bar;
+
+            if (state.S_bar === 0 && state.R_bar === 1) {
+                state.Q = 1; state.Q_bar = 0;
+            } else if (state.S_bar === 1 && state.R_bar === 0) {
+                state.Q = 0; state.Q_bar = 1;
+            } else if (state.S_bar === 1 && state.R_bar === 1) {
+                // Hold
+            } else {
+                // Both 0 - shouldn't happen with D Latch structure unless glitching, but technically Q=1, Qb=1
+                state.Q = 1; state.Q_bar = 1;
+            }
+
+            updateUI();
+            logAction();
+        }
+
+        function nand(a, b) {
+            return (a && b) ? 0 : 1;
+        }
+
+        // UI Updates
+        function updateUI() {
+            // Buttons
+            btnStyle('btnD', state.D, 'd-button');
+            btnStyle('btnEN', state.EN, 'en-button');
+
+            setText('btnD', `D = ${state.D}`);
+            setText('btnEN', `EN = ${state.EN}`);
+
+            setIndicator('indD', state.D);
+            setIndicator('indEN', state.EN);
+
+            // Latch State Text
+            const lbl = document.getElementById('latchStateLabel');
+            if (state.EN) {
+                lbl.textContent = "TRANSPARENT (Q follows D)";
+                lbl.className = "gate-state-label latch-state transparent";
+            } else {
+                lbl.textContent = `LATCHED (Holding Q=${state.Q})`;
+                lbl.className = "gate-state-label latch-state opaque";
+            }
+
+            // Wires
+            setWire('w_d_in', state.D);
+            setWire('w_d_to_inv', state.D);
+            setWire('w_not_d', state.D_bar);
+
+            setWire('w_en_main', state.EN);
+            setWire('w_en_split', state.EN);
+            setWire('w_en_top', state.EN);
+            setWire('w_en_bot', state.EN);
+
+            setWire('w_d_nand1', state.D);
+
+            setWire('w_s_bar', state.S_bar);
+            setWire('w_r_bar', state.R_bar);
+
+            setWire('w_nand3_in1', state.S_bar);
+            setWire('w_nand4_in2', state.R_bar);
+
+            setWire('w_q_out', state.Q);
+            setWire('w_q_bar_out', state.Q_bar);
+
+            setWire('w_fb_q', state.Q);
+            setWire('w_fb_q_bar', state.Q_bar);
+        }
+
+        function setWire(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute('class', val ? 'wire high' : 'wire low');
+        }
+
+        function btnStyle(id, val, base) {
+            document.getElementById(id).className = `big-button ${base} ${val ? 'active' : ''}`;
+        }
+
+        function setText(id, txt) {
+            document.getElementById(id).textContent = txt;
+        }
+
+        function setIndicator(id, val) {
+            const el = document.getElementById(id);
+            el.textContent = val;
+            el.className = `value-indicator ${val ? 'high' : 'low'}`;
+        }
+
+        // Log helper
+        let lastStateStr = "";
+        function logAction() {
+            const log = document.getElementById('activityLog');
+            const stateStr = `${state.EN}${state.D}${state.Q}`;
+
+            // Only log logic transitions
+            if (stateStr === lastStateStr) return;
+            lastStateStr = stateStr;
+
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const msg = document.createElement('div');
+
+            let txt = `State: EN=${state.EN}, D=${state.D} -> Q=${state.Q}`;
+            if (state.EN && state.D != state.Q) txt += " (Updating)";
+
+            msg.className = "log-entry highlight";
+            msg.textContent = `[${time}] ${txt}`;
+            log.prepend(msg);
+        }
+
+        // Timing Diagram
+        function initWaveforms() {
+            const c = document.getElementById('waveContainer');
+            ['EN', 'D', 'S_bar', 'R_bar', 'Q'].forEach(sig => {
+                const row = document.createElement('div');
+                row.className = 'waveform-row';
+                row.innerHTML = `<div class="waveform-label" style="color:${sigColor(sig)}">${sig}</div><div class="waveform-track" id="track_${sig}"></div>`;
+                c.appendChild(row);
+            });
+        }
+
+        function sigColor(sig) {
+            if (sig.includes('Q')) return '#ff9800';
+            if (sig.includes('D')) return '#ffeb3b';
+            if (sig.includes('EN')) return '#4fc3f7';
+            return '#9fa8da';
+        }
+
+        function tick() {
+            // Shift history
+            ['EN', 'D', 'S_bar', 'R_bar', 'Q'].forEach(sig => {
+                const track = document.getElementById(`track_${sig}`);
+                const seg = document.createElement('div');
+                // Maps signal name to state key
+                let val = state[sig];
+
+                seg.className = `wave-seg ${val ? 'high' : 'low'}`;
+                seg.style.backgroundColor = val ? sigColor(sig) : '#37474f';
+
+                track.appendChild(seg);
+                if (track.children.length > MAX_HISTORY) {
+                    track.removeChild(track.firstChild);
+                }
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'd') toggleD();
+            if (e.key.toLowerCase() === 'e') toggleEN();
+        });
+
+    </script>
+</body>
+
+</html>

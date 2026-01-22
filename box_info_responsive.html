@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Drive: Cloud Sync Across Computers</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0f1729;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 16:9 Viewport Container */
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fixed 1920x1080 Design Surface */
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1729;
+            color: #e0e0e0;
+            padding: 18px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #b0bec5;
+            font-size: 18px;
+            font-weight: 400;
+            margin-bottom: 14px;
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            background: #1a1215;
+            border: 2px solid #f44336;
+            border-radius: 12px;
+            padding: 12px 22px;
+            margin-bottom: 12px;
+        }
+
+        .warning-title {
+            color: #f44336;
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-content {
+            display: flex;
+            gap: 40px;
+        }
+
+        .warning-column {
+            flex: 1;
+        }
+
+        .warning-column h4 {
+            margin: 0 0 6px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .warning-column.bad h4 { color: #f44336; }
+        .warning-column.good h4 { color: #4caf50; }
+
+        .path-example {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 15px;
+            padding: 5px 12px;
+            border-radius: 6px;
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .path-example.bad {
+            background: #2a1518;
+            border: 2px solid #f44336;
+            color: #ef9a9a;
+        }
+
+        .path-example.good {
+            background: #152a18;
+            border: 2px solid #4caf50;
+            color: #a5d6a7;
+        }
+
+        .path-example .icon {
+            font-size: 18px;
+        }
+
+        .bad-chars {
+            color: #ff5252;
+            background: #3d1a1a;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: 700;
+        }
+
+        .warning-reason {
+            font-size: 15px;
+            color: #b0bec5;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #0a0e14;
+            border-radius: 6px;
+            border: 2px solid #37474f;
+        }
+
+        .warning-reason strong {
+            color: #ffb74d;
+        }
+
+        .warning-reason code {
+            background: #1a2332;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            color: #ff8a80;
+        }
+
+        /* Key Concepts */
+        .key-concepts {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 12px;
+        }
+
+        .concept {
+            background: #141c2a;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            font-size: 15px;
+        }
+
+        .concept.box { border-color: #0061d5; }
+        .concept.lab { border-color: #ff9800; }
+        .concept.home { border-color: #9c27b0; }
+
+        .concept strong {
+            display: block;
+            margin-bottom: 3px;
+            font-size: 17px;
+        }
+
+        .concept span {
+            color: #90a4ae;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .controls button {
+            background: #1a237e;
+            color: #fff;
+            border: 2px solid #5c6bc0;
+            border-radius: 10px;
+            padding: 10px 22px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.15s ease;
+            min-width: 140px;
+        }
+
+        .controls button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: #4fc3f7;
+        }
+
+        .controls button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .controls .create-btn {
+            background: linear-gradient(145deg, #4caf50, #388e3c);
+            border-color: #81c784;
+        }
+
+        .controls .edit-btn {
+            background: linear-gradient(145deg, #ff9800, #f57c00);
+            border-color: #ffb74d;
+            color: #000;
+        }
+
+        .controls .sync-btn {
+            background: linear-gradient(145deg, #0061d5, #0052b3);
+            border-color: #4fc3f7;
+            cursor: default;
+        }
+
+        .controls .sync-btn:hover {
+            transform: none;
+        }
+
+        .controls .sync-btn.blinking {
+            animation: blink 0.4s ease-in-out 3;
+        }
+
+        @keyframes blink {
+            0%, 100% { 
+                background: linear-gradient(145deg, #0061d5, #0052b3);
+                box-shadow: none;
+            }
+            50% { 
+                background: linear-gradient(145deg, #4fc3f7, #0061d5);
+                box-shadow: 0 0 20px rgba(79, 195, 247, 0.9);
+            }
+        }
+
+        .controls .switch-btn {
+            background: linear-gradient(145deg, #9c27b0, #7b1fa2);
+            border-color: #ce93d8;
+        }
+
+        .controls .reset-btn {
+            background: #0d1b2a;
+            color: #90a4ae;
+            border-color: #546e7a;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: #0d1b2a;
+            border: 2px solid #546e7a;
+            border-radius: 10px;
+            padding: 10px 22px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .status-message {
+            color: #e0e0e0;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .location-indicator {
+            display: inline-block;
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .location-indicator.lab {
+            background: #332200;
+            border: 2px solid #ff9800;
+            color: #ffb74d;
+        }
+
+        .location-indicator.home {
+            background: #2a1532;
+            border: 2px solid #9c27b0;
+            color: #ce93d8;
+        }
+
+        /* Three Panel Layout */
+        .three-panels {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 18px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel {
+            background: #0d1b2a;
+            border: 3px solid #546e7a;
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel.lab { border-color: #ff9800; }
+        .panel.box { border-color: #0061d5; }
+        .panel.home { border-color: #9c27b0; }
+
+        .panel.active {
+            box-shadow: 0 0 24px rgba(79, 195, 247, 0.4);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .panel-title {
+            font-weight: 700;
+            font-size: 18px;
+            color: #e0e0e0;
+        }
+
+        .panel-badge {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+        }
+
+        .panel-badge.lab { background: #ff9800; color: #000; }
+        .panel-badge.box { background: #0061d5; }
+        .panel-badge.home { background: #9c27b0; }
+
+        .panel-path {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            color: #90a4ae;
+            margin-top: 4px;
+        }
+
+        /* Cloud Icon */
+        .cloud-visual {
+            text-align: center;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        .cloud-icon {
+            font-size: 44px;
+        }
+
+        .cloud-label {
+            font-size: 15px;
+            color: #90a4ae;
+            margin-top: 4px;
+        }
+
+        /* File Tree */
+        .file-tree {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 15px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .folder, .file {
+            padding: 6px 12px;
+            margin: 3px 0;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .folder {
+            color: #ffb74d;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .file {
+            color: #b0bec5;
+            margin-left: 22px;
+        }
+
+        .file.new {
+            background: #1a2e1a;
+            border: 2px solid #4caf50;
+            color: #a5d6a7;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .file.modified {
+            background: #2e2a1a;
+            border: 2px solid #ff9800;
+            color: #ffcc80;
+        }
+
+        .file.syncing {
+            background: #1a2a3e;
+            border: 2px solid #4fc3f7;
+            animation: syncPulse 0.5s ease infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes syncPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .file-icon, .folder-icon {
+            font-size: 18px;
+        }
+
+        .sync-badge {
+            font-size: 12px;
+            padding: 2px 10px;
+            border-radius: 5px;
+            margin-left: auto;
+            font-weight: 700;
+        }
+
+        .sync-badge.synced {
+            background: #1a2e1a;
+            color: #81c784;
+        }
+
+        .sync-badge.pending {
+            background: #2e2a1a;
+            color: #ffb74d;
+        }
+
+        .sync-badge.syncing {
+            background: #1a2a3e;
+            color: #4fc3f7;
+        }
+
+        /* Empty State */
+        .empty-state {
+            color: #607d8b;
+            font-size: 14px;
+            text-align: center;
+            padding: 18px;
+            font-style: italic;
+        }
+
+        /* Footer */
+        .footer-note {
+            text-align: center;
+            color: #78909c;
+            font-size: 16px;
+            padding-top: 10px;
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .footer-note strong {
+            color: #4fc3f7;
+        }
+
+        /* Debug Info */
+        .debug-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: #4fc3f7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <h1>☁️ Box Drive: Syncing Your Work</h1>
+            <p class="subtitle">How your files stay synchronized between the lab computers, Box cloud, and your personal computer</p>
+
+            <!-- Warning Banner -->
+            <div class="warning-banner">
+                <div class="warning-title">⚠️ Critical: File & Folder Naming Rules</div>
+                <div class="warning-content">
+                    <div class="warning-column bad">
+                        <h4>❌ NEVER Use:</h4>
+                        <div class="path-example bad">
+                            <span class="icon">📁</span>
+                            <span>ELC 2337<span class="bad-chars"> </span>Labs/</span>
+                        </div>
+                        <div class="path-example bad">
+                            <span class="icon">📄</span>
+                            <span>Lab<span class="bad-chars"> </span>#1<span class="bad-chars"> </span>Report.docx</span>
+                        </div>
+                        <div class="path-example bad">
+                            <span class="icon">📄</span>
+                            <span>counter<span class="bad-chars">(</span>final<span class="bad-chars">)</span>.v</span>
+                        </div>
+                    </div>
+                    <div class="warning-column good">
+                        <h4>✅ DO Use:</h4>
+                        <div class="path-example good">
+                            <span class="icon">📁</span>
+                            <span>ELC2337_Labs/</span>
+                        </div>
+                        <div class="path-example good">
+                            <span class="icon">📄</span>
+                            <span>Lab01_Report.docx</span>
+                        </div>
+                        <div class="path-example good">
+                            <span class="icon">📄</span>
+                            <span>counter_final.v</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="warning-reason">
+                    <strong>Why?</strong> Spaces and special characters (<code># & ( ) @ !</code>) break command-line tools and Vivado. 
+                    Use <strong>underscores</strong> <code>_</code> or <strong>hyphens</strong> <code>-</code> instead!
+                </div>
+            </div>
+
+            <!-- Key Concepts -->
+            <div class="key-concepts">
+                <div class="concept lab">
+                    <strong>🖥️ Lab Computer</strong>
+                    <span>Box Drive mounts as a local folder</span>
+                </div>
+                <div class="concept box">
+                    <strong>☁️ Box Cloud</strong>
+                    <span>Your files stored online by Baylor</span>
+                </div>
+                <div class="concept home">
+                    <strong>💻 Personal Computer</strong>
+                    <span>Install Box Drive to sync at home</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="create-btn" id="createBtn">📄 Create File</button>
+                <button class="edit-btn" id="editBtn" disabled>✏️ Edit File</button>
+                <button class="sync-btn" id="syncBtn">☁️ Box Drive</button>
+                <button class="switch-btn" id="switchBtn">🔀 Switch Computer</button>
+                <button class="reset-btn" id="resetBtn">🔄 Reset</button>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="location-indicator lab" id="locationIndicator">📍 You are at: Lab Computer</div>
+                <div class="status-message" id="statusMessage">
+                    Create a file to see how Box Drive automatically syncs your work across computers.
+                </div>
+            </div>
+
+            <!-- Three Panel Layout -->
+            <div class="three-panels">
+                <!-- Lab Computer -->
+                <div class="panel lab active" id="labPanel">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title">🖥️ Lab Computer</div>
+                            <div class="panel-path">D:\Box\ELC2337_Labs\</div>
+                        </div>
+                        <span class="panel-badge lab">Box Drive</span>
+                    </div>
+                    <div class="file-tree" id="labFiles">
+                        <div class="folder"><span class="folder-icon">📁</span> ELC2337_Labs</div>
+                        <div class="empty-state">No files yet. Create one!</div>
+                    </div>
+                </div>
+
+                <!-- Box Cloud -->
+                <div class="panel box" id="boxPanel">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title">☁️ Box Cloud</div>
+                            <div class="panel-path">box.baylor.edu/ELC2337_Labs/</div>
+                        </div>
+                        <span class="panel-badge box">Cloud Storage</span>
+                    </div>
+                    <div class="cloud-visual">
+                        <div class="cloud-icon">☁️</div>
+                        <div class="cloud-label">Baylor Box Storage</div>
+                    </div>
+                    <div class="file-tree" id="boxFiles">
+                        <div class="folder"><span class="folder-icon">📁</span> ELC2337_Labs</div>
+                        <div class="empty-state">Syncs automatically</div>
+                    </div>
+                </div>
+
+                <!-- Personal Computer -->
+                <div class="panel home" id="homePanel">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title">💻 Personal Computer</div>
+                            <div class="panel-path">C:\Users\You\Box\ELC2337_Labs\</div>
+                        </div>
+                        <span class="panel-badge home">Box Drive</span>
+                    </div>
+                    <div class="file-tree" id="homeFiles">
+                        <div class="folder"><span class="folder-icon">📁</span> ELC2337_Labs</div>
+                        <div class="empty-state">Install Box Drive to sync here</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer-note">
+                <strong>Key Insight:</strong> Box Drive syncs automatically in the background. Save your work and it appears on all your computers!
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="debug-info" id="debugInfo"></div>
+
+    <script>
+        // ============================================
+        // HIGH-DPI AWARE AUTO-RESIZE SYSTEM
+        // ============================================
+        
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            const debugInfo = document.getElementById('debugInfo');
+            
+            const dpr = window.devicePixelRatio || 1;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+            
+            debugInfo.textContent = `DPR: ${dpr.toFixed(2)} | Scale: ${scale.toFixed(3)} | ${Math.round(containerWidth)}×${Math.round(containerHeight)}`;
+        }
+
+        function initializeResponsive() {
+            autoResize();
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(autoResize, 50);
+            });
+        }
+
+        // ============================================
+        // APPLICATION STATE & LOGIC
+        // ============================================
+        
+        const state = {
+            currentLocation: 'lab',
+            files: [],
+            pendingSync: false
+        };
+
+        const fileTemplates = [
+            'counter.v',
+            'tb_counter.v',
+            'basys3_pins.xdc',
+            'Lab01_Report.docx'
+        ];
+        let fileIndex = 0;
+
+        const createBtn = document.getElementById('createBtn');
+        const editBtn = document.getElementById('editBtn');
+        const syncBtn = document.getElementById('syncBtn');
+        const switchBtn = document.getElementById('switchBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const locationIndicator = document.getElementById('locationIndicator');
+        const labPanel = document.getElementById('labPanel');
+        const homePanel = document.getElementById('homePanel');
+
+        function setMessage(text) {
+            statusMessage.textContent = text;
+        }
+
+        function updateLocation() {
+            if (state.currentLocation === 'lab') {
+                locationIndicator.className = 'location-indicator lab';
+                locationIndicator.textContent = '📍 You are at: Lab Computer';
+                labPanel.classList.add('active');
+                homePanel.classList.remove('active');
+            } else {
+                locationIndicator.className = 'location-indicator home';
+                locationIndicator.textContent = '📍 You are at: Personal Computer';
+                homePanel.classList.add('active');
+                labPanel.classList.remove('active');
+            }
+        }
+
+        function renderFiles() {
+            const labFilesEl = document.getElementById('labFiles');
+            const boxFilesEl = document.getElementById('boxFiles');
+            const homeFilesEl = document.getElementById('homeFiles');
+
+            function renderFileList(container, location) {
+                container.innerHTML = '<div class="folder"><span class="folder-icon">📁</span> ELC2337_Labs</div>';
+                
+                if (state.files.length === 0) {
+                    const emptyMsg = location === 'box' ? 'Syncs automatically' : 
+                                    location === 'home' ? 'Install Box Drive to sync here' : 
+                                    'No files yet. Create one!';
+                    container.innerHTML += `<div class="empty-state">${emptyMsg}</div>`;
+                    return;
+                }
+
+                state.files.forEach(file => {
+                    const div = document.createElement('div');
+                    div.className = 'file';
+                    
+                    if (location === 'box') {
+                        if (file.syncStatus === 'synced') {
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge synced">✓ synced</span>`;
+                        } else if (file.syncStatus === 'syncing') {
+                            div.classList.add('syncing');
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge syncing">syncing...</span>`;
+                        } else {
+                            return;
+                        }
+                    } else if (location === state.currentLocation) {
+                        if (file.modified) {
+                            div.classList.add('modified');
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge pending">modified</span>`;
+                        } else if (file.syncStatus === 'new') {
+                            div.classList.add('new');
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge pending">new</span>`;
+                        } else {
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge synced">✓ synced</span>`;
+                        }
+                    } else {
+                        if (file.syncStatus === 'synced' && !file.modified) {
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge synced">✓ synced</span>`;
+                        } else if (file.syncStatus === 'synced' && file.modified) {
+                            div.innerHTML = `<span class="file-icon">📄</span> ${file.name} <span class="sync-badge synced">✓</span>`;
+                        } else {
+                            return;
+                        }
+                    }
+                    
+                    container.appendChild(div);
+                });
+            }
+
+            renderFileList(labFilesEl, 'lab');
+            renderFileList(boxFilesEl, 'box');
+            renderFileList(homeFilesEl, 'home');
+
+            updateButtons();
+        }
+
+        function updateButtons() {
+            const hasFiles = state.files.length > 0;
+            createBtn.disabled = fileIndex >= fileTemplates.length;
+            editBtn.disabled = !hasFiles || !state.files.some(f => f.syncStatus === 'synced' && !f.modified);
+        }
+
+        function triggerAutoSync(pendingFiles, message) {
+            syncBtn.classList.add('blinking');
+            setMessage('Box Drive syncing...');
+
+            setTimeout(() => {
+                syncBtn.classList.remove('blinking');
+                pendingFiles.forEach(f => {
+                    f.syncStatus = 'syncing';
+                    f.modified = false;
+                });
+                renderFiles();
+            }, 1200);
+
+            setTimeout(() => {
+                pendingFiles.forEach(f => {
+                    f.syncStatus = 'synced';
+                });
+                setMessage(message);
+                renderFiles();
+            }, 2000);
+        }
+
+        createBtn.addEventListener('click', () => {
+            if (fileIndex >= fileTemplates.length) return;
+            
+            const fileName = fileTemplates[fileIndex];
+            const newFile = {
+                name: fileName,
+                syncStatus: 'new',
+                modified: false
+            };
+            state.files.push(newFile);
+            fileIndex++;
+            
+            setMessage(`Created ${fileName}. Box Drive syncing...`);
+            renderFiles();
+
+            triggerAutoSync([newFile], `${fileName} synced to Box! Now available on all your computers.`);
+        });
+
+        editBtn.addEventListener('click', () => {
+            const syncedFile = state.files.find(f => f.syncStatus === 'synced' && !f.modified);
+            if (!syncedFile) return;
+            
+            syncedFile.modified = true;
+            setMessage(`Edited ${syncedFile.name}. Box Drive syncing...`);
+            renderFiles();
+
+            triggerAutoSync([syncedFile], `${syncedFile.name} synced to Box! Changes available on all your computers.`);
+        });
+
+        syncBtn.addEventListener('click', () => {
+            setMessage('Box Drive syncs automatically! Just save your files and they upload to the cloud.');
+        });
+
+        switchBtn.addEventListener('click', () => {
+            const isSyncing = state.files.some(f => f.syncStatus === 'syncing' || f.syncStatus === 'new' || f.modified);
+            
+            if (isSyncing) {
+                setMessage('⚠️ Wait! Box Drive is still syncing. Give it a moment...');
+                return;
+            }
+            
+            state.currentLocation = state.currentLocation === 'lab' ? 'home' : 'lab';
+            updateLocation();
+            
+            setMessage(`Switched to ${state.currentLocation === 'lab' ? 'Lab Computer' : 'Personal Computer'}. Your synced files are already here!`);
+            renderFiles();
+        });
+
+        resetBtn.addEventListener('click', () => {
+            state.currentLocation = 'lab';
+            state.files = [];
+            state.pendingSync = false;
+            fileIndex = 0;
+            updateLocation();
+            setMessage('Create a file to see how Box Drive automatically syncs your work across computers.');
+            renderFiles();
+        });
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        initializeResponsive();
+        updateLocation();
+        renderFiles();
+    </script>
+</body>
+
+</html>

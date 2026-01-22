@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4-State FSM - Sequence Detector</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: #e0e0e0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            margin: 0 0 5px 0;
+            font-size: 1.4em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        /* Controls */
+        .controls-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+
+        .control-panel {
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid #546e7a;
+        }
+
+        .control-panel.input-panel {
+            border-color: #ffeb3b;
+        }
+
+        .control-panel.clk-panel {
+            border-color: #4fc3f7;
+        }
+
+        .big-button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .big-button:active {
+            transform: scale(0.97);
+        }
+
+        .x-button {
+            background: linear-gradient(145deg, #f9a825, #ff8f00);
+            color: #000;
+        }
+
+        .x-button:hover {
+            background: linear-gradient(145deg, #ffca28, #ffa000);
+        }
+
+        .clk-button {
+            background: linear-gradient(145deg, #0277bd, #01579b);
+            color: #fff;
+        }
+
+        .clk-button:hover {
+            background: linear-gradient(145deg, #039be5, #0277bd);
+        }
+
+        .reset-button {
+            background: linear-gradient(145deg, #c62828, #b71c1c);
+            color: #fff;
+            max-width: 80px;
+        }
+
+        .value-indicator {
+            font-size: 1.5em;
+            font-weight: bold;
+            width: 30px;
+            text-align: center;
+        }
+
+        .value-indicator.high {
+            color: #4caf50;
+            text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+
+        .value-indicator.low {
+            color: #546e7a;
+        }
+
+        /* Diagram Area */
+        .diagram-section {
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #7e57c2;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            position: relative;
+        }
+
+        .diagram-title {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #7e57c2;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* SVG Styles */
+        .state-circle {
+            fill: #1a237e;
+            stroke: #5c6bc0;
+            stroke-width: 2;
+            transition: all 0.3s;
+        }
+
+        .state-circle.active {
+            fill: #1b5e20;
+            stroke: #4caf50;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.6));
+        }
+
+        .state-text {
+            fill: #fff;
+            font-family: sans-serif;
+            font-weight: bold;
+            text-anchor: middle;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .state-subtext {
+            fill: #9fa8da;
+            font-family: sans-serif;
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .state-subtext.active-out {
+            fill: #4caf50;
+            font-weight: bold;
+        }
+
+        .transition-path {
+            fill: none;
+            stroke: #546e7a;
+            stroke-width: 2;
+            transition: all 0.2s;
+        }
+
+        /* Highlight Next Path (based on Input X) */
+        .transition-path.next-path {
+            stroke: #ffeb3b;
+            stroke-width: 3;
+            stroke-dasharray: 5, 5;
+            animation: dashMove 1s linear infinite;
+        }
+
+        @keyframes dashMove {
+            to {
+                stroke-dashoffset: -10;
+            }
+        }
+
+        .transition-label {
+            fill: #90a4ae;
+            font-family: monospace;
+            font-size: 14px;
+            text-anchor: middle;
+            background: #0d1b2a;
+        }
+
+        .transition-label-bg {
+            fill: #0d1b2a;
+        }
+
+        /* Bottom Section */
+        .bottom-section {
+            display: flex;
+            gap: 10px;
+            height: 15vh;
+            min-height: 120px;
+            max-height: 200px;
+            flex-shrink: 0;
+        }
+
+        .timing-section {
+            flex: 3;
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-section {
+            flex: 1;
+            background: #0d1b2a;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            color: #4fc3f7;
+            font-size: 0.9em;
+            margin: 0 0 5px 0;
+            font-weight: bold;
+        }
+
+        .waveform-container {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 5px;
+            overflow-x: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .waveform-row {
+            display: flex;
+            align-items: center;
+            height: 20%;
+        }
+
+        .waveform-label {
+            width: 50px;
+            font-weight: bold;
+            font-size: 0.75em;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        .waveform-track {
+            flex: 1;
+            height: 100%;
+            background: #151d33;
+            border-radius: 3px;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+
+        .wave-seg {
+            width: 4px;
+            margin-right: 1px;
+            background: #4caf50;
+        }
+
+        .activity-log {
+            background: #0a1628;
+            border-radius: 8px;
+            padding: 5px;
+            flex: 1;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75em;
+            color: #90a4ae;
+        }
+
+        .log-highlight {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Sequence Detector FSM</h1>
+        <p class="subtitle">Moore Machine detecting "1-0-1" outputting 1 on success</p>
+
+        <div class="controls-section">
+            <div class="control-panel input-panel">
+                <button class="big-button x-button" onclick="toggleX()">Toggle Input (X)</button>
+                <div class="value-indicator low" id="indX">0</div>
+            </div>
+
+            <div class="control-panel clk-panel">
+                <button class="big-button clk-button" onclick="stepClock()">Step Clock (↑)</button>
+                <button class="big-button reset-button" onclick="resetFSM()">RST</button>
+            </div>
+        </div>
+
+        <div class="diagram-section">
+            <div class="diagram-title">State Transition Diagram</div>
+            <svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="19" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#546e7a" />
+                    </marker>
+                    <marker id="arrow-active" markerWidth="10" markerHeight="10" refX="19" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#ffeb3b" />
+                    </marker>
+                </defs>
+
+                <!-- Transitions (Paths only, labeled via text) -->
+
+                <!-- S0 Loop -->
+                <path d="M 185,210 C 140,160 140,290 185,240" class="transition-path" id="p_s0_s0" fill="none"
+                    marker-end="url(#arrow)" />
+                <text x="145" y="225" class="transition-label">0</text>
+
+                <!-- S0 -> S1 (Right) -->
+                <path d="M 240,225 L 360,225" class="transition-path" id="p_s0_s1" marker-end="url(#arrow)" />
+                <text x="300" y="215" class="transition-label">1</text>
+
+                <!-- S1 Loop (Top) -->
+                <path d="M 390,195 C 430,130 370,130 410,195" class="transition-path" id="p_s1_s1" fill="none"
+                    marker-end="url(#arrow)" />
+                <text x="400" y="150" class="transition-label">1</text>
+
+                <!-- S1 -> S2 (Down) -->
+                <path d="M 400,265 L 400,385" class="transition-path" id="p_s1_s2" marker-end="url(#arrow)" />
+                <text x="415" y="325" class="transition-label">0</text>
+
+                <!-- S2 -> S3 (Up Right) -->
+                <path d="M 435,400 L 575,250" class="transition-path" id="p_s2_s3" marker-end="url(#arrow)" />
+                <text x="515" y="340" class="transition-label">1</text>
+
+                <!-- S2 -> S0 (Up Left) -->
+                <path d="M 365,400 L 225,250" class="transition-path" id="p_s2_s0" marker-end="url(#arrow)" />
+                <text x="270" y="340" class="transition-label">0</text>
+
+                <!-- S3 -> S1 (Left High) -->
+                <path d="M 570,225 Q 500,180 440,215" class="transition-path" id="p_s3_s1" marker-end="url(#arrow)" />
+                <text x="500" y="190" class="transition-label">1</text>
+
+                <!-- S3 -> S2 (Left Low) -->
+                <path d="M 580,250 Q 520,380 440,400" class="transition-path" id="p_s3_s2" marker-end="url(#arrow)" />
+                <text x="530" y="330" class="transition-label">0</text>
+
+
+                <!-- States -->
+                <!-- S0 -->
+                <circle cx="200" cy="225" r="40" class="state-circle active" id="node_0" />
+                <text x="200" y="225" dy="-5" class="state-text">S0</text>
+                <text x="200" y="225" dy="15" class="state-subtext">Init (0)</text>
+
+                <!-- S1 -->
+                <circle cx="400" cy="225" r="40" class="state-circle" id="node_1" />
+                <text x="400" y="225" dy="-5" class="state-text">S1</text>
+                <text x="400" y="225" dy="15" class="state-subtext">Got 1 (0)</text>
+
+                <!-- S2 -->
+                <circle cx="400" cy="425" r="40" class="state-circle" id="node_2" />
+                <text x="400" y="425" dy="-5" class="state-text">S2</text>
+                <text x="400" y="425" dy="15" class="state-subtext">Got 10 (0)</text>
+
+                <!-- S3 -->
+                <circle cx="600" cy="225" r="40" class="state-circle" id="node_3" />
+                <text x="600" y="225" dy="-5" class="state-text">S3</text>
+                <text x="600" y="225" dy="15" class="state-subtext active-out" id="text_out_3">Found (1)</text>
+
+            </svg>
+        </div>
+
+        <div class="bottom-section">
+            <div class="timing-section">
+                <div class="section-header">Waveform History</div>
+                <div class="waveform-container" id="waveContainer">
+                    <!-- JS creates tracks -->
+                </div>
+            </div>
+            <div class="log-section">
+                <div class="section-header">FSM Log</div>
+                <div class="activity-log" id="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Machine Definitions
+        // Transitions: [If X=0, If X=1]
+        const transitions = [
+            [0, 1], // S0 (Init)   -> 0:S0, 1:S1
+            [2, 1], // S1 (Got 1)  -> 0:S2, 1:S1
+            [0, 3], // S2 (Got 10) -> 0:S0, 1:S3
+            [2, 1]  // S3 (Got 101)-> 0:S2, 1:S1 (Overlap: 1010->S2, 1011->S1)
+        ];
+
+        const outputs = [0, 0, 0, 1]; // Moore Outputs per state
+
+        // System State
+        let currentState = 0;
+        let inputX = 0;
+        let clockCount = 0;
+
+        // UI Config
+        const MAX_HISTORY = 100;
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initWaveforms();
+            updateUI(true); // Initial reset
+        });
+
+        // Actions
+        function toggleX() {
+            inputX = inputX ? 0 : 1;
+            updateUI(false);
+        }
+
+        function stepClock() {
+            const nextState = transitions[currentState][inputX];
+
+            logAction(`State ${currentState} (x=${inputX}) → State ${nextState}`);
+
+            currentState = nextState;
+            clockCount++;
+
+            addWaveSample(true); // Clock tick
+            updateUI(false);
+
+            // Allow waveform to show clock pulse
+            setTimeout(() => addWaveSample(false), 200);
+        }
+
+        function resetFSM() {
+            currentState = 0;
+            inputX = 0;
+            clockCount = 0;
+            logAction("Reset FSM");
+            updateUI(true);
+            clearWaves();
+        }
+
+        // UI Logic
+        function updateUI(isReset) {
+            // 1. Controls
+            const indX = document.getElementById('indX');
+            indX.textContent = inputX;
+            indX.className = `value-indicator ${inputX ? 'high' : 'low'}`;
+
+            // 2. Diagram State Highlighting
+            for (let i = 0; i < 4; i++) {
+                const node = document.getElementById(`node_${i}`);
+                if (i === currentState) node.classList.add('active');
+                else node.classList.remove('active');
+            }
+
+            // 3. Diagram Next-Path Prediction
+            // Clear all path highlights first
+            document.querySelectorAll('.transition-path').forEach(p => {
+                p.classList.remove('next-path');
+                p.setAttribute('marker-end', 'url(#arrow)');
+            });
+
+            // Find valid path from current state based on current X
+            const predictedNext = transitions[currentState][inputX];
+            const pathId = `p_s${currentState}_s${predictedNext}`;
+            const pathEl = document.getElementById(pathId);
+            if (pathEl) {
+                pathEl.classList.add('next-path');
+                pathEl.setAttribute('marker-end', 'url(#arrow-active)');
+            }
+        }
+
+        // Logging
+        function logAction(msg) {
+            const logIdx = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.textContent = `[T=${clockCount}] ${msg}`;
+            entry.className = 'log-highlight';
+            logIdx.prepend(entry);
+        }
+
+        // Waveforms
+        function initWaveforms() {
+            const c = document.getElementById('waveContainer');
+            ['CLK', 'Input X', 'State', 'Out'].forEach(sig => {
+                const row = document.createElement('div');
+                row.className = 'waveform-row';
+                row.innerHTML = `<div class="waveform-label">${sig}</div><div class="waveform-track" id="track_${sig.replace(' ', '')}"></div>`;
+                c.appendChild(row);
+            });
+        }
+
+        function addWaveSample(clkHigh) {
+            const data = {
+                CLK: clkHigh ? 1 : 0,
+                InputX: inputX,
+                State: currentState,
+                Out: outputs[currentState]
+            };
+
+            Object.keys(data).forEach(sig => {
+                const track = document.getElementById(`track_${sig}`);
+                const seg = document.createElement('div');
+                seg.className = 'wave-seg';
+
+                const val = data[sig];
+
+                // Color logic
+                if (sig === 'State') {
+                    // Unique height/color per state
+                    seg.style.height = `${(val + 1) * 25}%`;
+                    seg.style.backgroundColor = '#7e57c2';
+                } else {
+                    seg.style.height = val ? '100%' : '10%';
+                    seg.style.backgroundColor = val ? (sig === 'Out' ? '#4caf50' : '#ffeb3b') : '#37474f';
+                    if (sig === 'CLK' && val) seg.style.backgroundColor = '#4fc3f7';
+                }
+
+                track.appendChild(seg);
+
+                if (track.children.length > MAX_HISTORY) {
+                    track.removeChild(track.firstChild);
+                }
+            });
+        }
+
+        function clearWaves() {
+            document.querySelectorAll('.waveform-track').forEach(t => t.innerHTML = '');
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'x') toggleX();
+            if (e.key.toLowerCase() === 'c' || e.key === ' ') {
+                e.preventDefault();
+                stepClock();
+            }
+            if (e.key.toLowerCase() === 'r') resetFSM();
+        });
+
+    </script>
+</body>
+
+</html>

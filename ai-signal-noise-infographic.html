@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Model: Signal vs Noise in AI Context</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(180deg, #0a0a0f 0%, #0d1117 100%);
+            color: #e8e8ed;
+            padding: 50px 60px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #68d391, #ffffff, #fc8181);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            font-size: 20px;
+            font-weight: 300;
+            color: #8888a0;
+        }
+
+        .header .subtitle em {
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        .header .subtitle .signal { color: #68d391; }
+        .header .subtitle .noise { color: #fc8181; }
+
+        /* Main content layout */
+        .main-content {
+            display: flex;
+            gap: 50px;
+            height: 820px;
+        }
+
+        /* Left column */
+        .model-column {
+            width: 380px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .concept-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 18px;
+        }
+
+        .concept-box h2 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #a8d0ff;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        .concept-box p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #b8b8c8;
+            font-weight: 300;
+        }
+
+        .concept-box p strong {
+            color: #e8e8ed;
+            font-weight: 500;
+        }
+
+        .signal-text { color: #68d391; }
+        .noise-text { color: #fc8181; }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 18px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            flex: 1;
+        }
+
+        .legend-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .legend-icon.signal {
+            background: rgba(104,211,145,0.2);
+        }
+
+        .legend-icon.noise {
+            background: rgba(252,129,129,0.2);
+        }
+
+        .legend-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .legend-icon.signal svg { stroke: #68d391; }
+        .legend-icon.noise svg { stroke: #fc8181; }
+
+        .legend-label {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .legend-label.signal { color: #68d391; }
+        .legend-label.noise { color: #fc8181; }
+
+        .click-hint {
+            font-size: 11px;
+            color: #666680;
+            text-align: center;
+            margin-bottom: 14px;
+            font-style: italic;
+        }
+
+        /* Detail panel */
+        .detail-panel {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .detail-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .detail-header .layer-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .detail-header .layer-icon.system { background: linear-gradient(135deg, #4a5568, #2d3748); }
+        .detail-header .layer-icon.memory { background: linear-gradient(135deg, #805ad5, #553c9a); }
+        .detail-header .layer-icon.conversation { background: linear-gradient(135deg, #3182ce, #2c5282); }
+        .detail-header .layer-icon.message { background: linear-gradient(135deg, #38a169, #276749); }
+
+        .detail-header h3 {
+            font-size: 17px;
+            font-weight: 500;
+            color: #e8e8ed;
+        }
+
+        .context-badge {
+            margin-left: auto;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .context-badge.signal {
+            background: rgba(104,211,145,0.2);
+            color: #68d391;
+        }
+
+        .context-badge.noise {
+            background: rgba(252,129,129,0.2);
+            color: #fc8181;
+        }
+
+        .detail-section {
+            margin-bottom: 12px;
+        }
+
+        .detail-section h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 6px;
+            color: #8888a0;
+        }
+
+        .detail-section p {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #c8c8d8;
+            font-weight: 300;
+        }
+
+        .detail-section.signal-box {
+            background: rgba(104,211,145,0.08);
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 3px solid rgba(104,211,145,0.4);
+        }
+
+        .detail-section.signal-box h4 { color: #68d391; }
+
+        .detail-section.noise-box {
+            background: rgba(252,129,129,0.08);
+            padding: 12px 14px;
+            border-radius: 8px;
+            border-left: 3px solid rgba(252,129,129,0.4);
+        }
+
+        .detail-section.noise-box h4 { color: #fc8181; }
+
+        .detail-example {
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            background: rgba(168,208,255,0.08);
+            border-radius: 8px;
+            border-left: 3px solid rgba(168,208,255,0.3);
+        }
+
+        .detail-example h4 {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 6px;
+            color: #a8d0ff;
+        }
+
+        .detail-example p {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #c8c8d8;
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        .default-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #666680;
+        }
+
+        .default-content svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+
+        .default-content p {
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* Visualization area */
+        .visualization-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Scenario containers */
+        .scenario-row {
+            flex: 1;
+            display: flex;
+            gap: 30px;
+        }
+
+        .scenario {
+            flex: 1;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scenario-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-header h2 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .scenario.high-signal .scenario-header h2 { color: #68d391; }
+        .scenario.high-noise .scenario-header h2 { color: #fc8181; }
+
+        .scenario-header p {
+            font-size: 13px;
+            color: #8888a0;
+            margin-left: auto;
+        }
+
+        /* Signal visualization */
+        .signal-stack {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .signal-layer {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .signal-layer:hover {
+            transform: translateX(4px);
+        }
+
+        .signal-layer.highlighted {
+            transform: translateX(8px);
+            box-shadow: 0 0 20px rgba(255,255,255,0.05);
+        }
+
+        .signal-layer.system { background: rgba(74,85,104,0.25); }
+        .signal-layer.memory { background: rgba(128,90,213,0.25); }
+        .signal-layer.conversation { background: rgba(49,130,206,0.25); }
+        .signal-layer.message { background: rgba(56,161,105,0.25); }
+
+        .layer-label {
+            width: 100px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .signal-layer.system .layer-label { color: #a0aec0; }
+        .signal-layer.memory .layer-label { color: #b794f4; }
+        .signal-layer.conversation .layer-label { color: #63b3ed; }
+        .signal-layer.message .layer-label { color: #68d391; }
+
+        /* Waveform visualization */
+        .waveform-container {
+            flex: 1;
+            height: 36px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .waveform {
+            width: 100%;
+            height: 100%;
+        }
+
+        .waveform-path {
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+
+        .high-signal .waveform-path.signal { stroke: #68d391; }
+        .high-signal .waveform-path.noise { stroke: #fc8181; opacity: 0.4; }
+
+        .high-noise .waveform-path.signal { stroke: #68d391; opacity: 0.5; }
+        .high-noise .waveform-path.noise { stroke: #fc8181; }
+
+        /* Signal indicator */
+        .signal-indicator {
+            width: 70px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .signal-bars {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 20px;
+        }
+
+        .signal-bar {
+            width: 4px;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .high-signal .signal-bar { background: #68d391; }
+        .high-noise .signal-bar { background: #fc8181; }
+
+        .signal-bar:nth-child(1) { height: 6px; }
+        .signal-bar:nth-child(2) { height: 10px; }
+        .signal-bar:nth-child(3) { height: 14px; }
+        .signal-bar:nth-child(4) { height: 18px; }
+
+        .high-noise .signal-bar:nth-child(3),
+        .high-noise .signal-bar:nth-child(4) {
+            opacity: 0.3;
+        }
+
+        .signal-label {
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .high-signal .signal-label { color: #68d391; }
+        .high-noise .signal-label { color: #fc8181; }
+
+        /* Output section */
+        .output-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .output-header {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8888a0;
+            margin-bottom: 12px;
+        }
+
+        .output-visualization {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .output-waveform {
+            flex: 1;
+            height: 50px;
+        }
+
+        .output-waveform .waveform-path {
+            stroke-width: 2.5;
+        }
+
+        .high-signal .output-waveform .waveform-path { stroke: #68d391; }
+        .high-noise .output-waveform .waveform-path { stroke: #fc8181; }
+
+        .output-result {
+            text-align: right;
+        }
+
+        .output-result .result-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .high-signal .output-result .result-label { color: #68d391; }
+        .high-noise .output-result .result-label { color: #fc8181; }
+
+        .output-result .result-desc {
+            font-size: 12px;
+            color: #8888a0;
+        }
+
+        /* SNR Meter */
+        .snr-meter {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .snr-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #8888a0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .snr-bar-container {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .snr-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .high-signal .snr-bar {
+            width: 85%;
+            background: linear-gradient(90deg, #68d391, #38a169);
+        }
+
+        .high-noise .snr-bar {
+            width: 30%;
+            background: linear-gradient(90deg, #fc8181, #e53e3e);
+        }
+
+        .snr-value {
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'IBM Plex Mono', monospace;
+            width: 50px;
+            text-align: right;
+        }
+
+        .high-signal .snr-value { color: #68d391; }
+        .high-noise .snr-value { color: #fc8181; }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <header class="header">
+                <h1>Signal vs Noise</h1>
+                <p class="subtitle">Context that reinforces your intent is <em class="signal">signal</em> · Context that conflicts is <em class="noise">noise</em></p>
+            </header>
+
+            <div class="main-content">
+                
+                <!-- Left column -->
+                <div class="model-column">
+                    <div class="concept-box">
+                        <h2>The Metaphor</h2>
+                        <p>Every context layer adds to the input stream. <strong class="signal-text">Signal</strong> is context aligned with your goal—it amplifies the right outputs. <strong class="noise-text">Noise</strong> is conflicting context—it drowns out what you want.</p>
+                    </div>
+
+                    <div class="concept-box">
+                        <h2>The Goal</h2>
+                        <p>Maximize your <strong>signal-to-noise ratio</strong>. The higher the ratio, the more probability mass concentrates on your desired output.</p>
+                    </div>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-icon signal">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <path d="M2 12h4l3-9 4 18 3-9h6"/>
+                                </svg>
+                            </div>
+                            <span class="legend-label signal">Signal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon noise">
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                                    <path d="M2 12h2l1-3 1 5 1-4 1 3 1-2 1 4 1-5 1 3 1-2 1 4 1-3 1 2h2"/>
+                                </svg>
+                            </div>
+                            <span class="legend-label noise">Noise</span>
+                        </div>
+                    </div>
+
+                    <p class="click-hint">Click any layer to see signal vs noise effects →</p>
+
+                    <!-- Detail panel -->
+                    <div class="detail-panel">
+                        <!-- Default state -->
+                        <div class="detail-content active" id="default-detail">
+                            <div class="default-content">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M2 12h4l3-9 4 18 3-9h6"/>
+                                </svg>
+                                <p>Click a context layer to see<br/>how it contributes signal or noise</p>
+                            </div>
+                        </div>
+
+                        <!-- System - Signal -->
+                        <div class="detail-content" id="system-signal-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon system"></div>
+                                <h3>System Context</h3>
+                                <span class="context-badge signal">Signal</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>Platform capabilities, current date, base behavioral rules. The foundational layer you can't edit.</p>
+                            </div>
+                            <div class="detail-section signal-box">
+                                <h4>As Signal ✓</h4>
+                                <p>When your request matches system capabilities, this layer amplifies valid responses. The system "knows what it can do" and boosts those outputs.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Asking for code explanation when coding is enabled → system context reinforces helpful, accurate responses.</p>
+                            </div>
+                        </div>
+
+                        <!-- System - Noise -->
+                        <div class="detail-content" id="system-noise-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon system"></div>
+                                <h3>System Context</h3>
+                                <span class="context-badge noise">Noise</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>Platform capabilities, current date, base behavioral rules. The foundational layer you can't edit.</p>
+                            </div>
+                            <div class="detail-section noise-box">
+                                <h4>As Noise ✗</h4>
+                                <p>When you ask for things outside capabilities, system context generates interference—refusals, hedging, or hallucinated workarounds compete with helpful responses.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>"What's happening in the news right now?" without web search → system adds noise by struggling between declining and guessing.</p>
+                            </div>
+                        </div>
+
+                        <!-- Memory - Signal -->
+                        <div class="detail-content" id="memory-signal-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon memory"></div>
+                                <h3>Memory</h3>
+                                <span class="context-badge signal">Signal</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>Persistent knowledge about you—preferences, background, past projects. Carries across sessions.</p>
+                            </div>
+                            <div class="detail-section signal-box">
+                                <h4>As Signal ✓</h4>
+                                <p>When memory aligns with your current task, it pre-tunes the response. You don't have to re-explain context—it's already amplifying the right direction.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Memory knows you're building a React app. You ask about state management → responses naturally assume React context.</p>
+                            </div>
+                        </div>
+
+                        <!-- Memory - Noise -->
+                        <div class="detail-content" id="memory-noise-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon memory"></div>
+                                <h3>Memory</h3>
+                                <span class="context-badge noise">Noise</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>Persistent knowledge about you—preferences, background, past projects. Carries across sessions.</p>
+                            </div>
+                            <div class="detail-section noise-box">
+                                <h4>As Noise ✗</h4>
+                                <p>Outdated or context-inappropriate memory creates interference. It pulls responses toward patterns that don't fit your current need.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Memory learned you prefer technical depth. Today you need a simple summary for a non-technical audience → responses keep drifting toward complexity.</p>
+                            </div>
+                        </div>
+
+                        <!-- Conversation - Signal -->
+                        <div class="detail-content" id="conversation-signal-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon conversation"></div>
+                                <h3>Conversation</h3>
+                                <span class="context-badge signal">Signal</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The accumulated back-and-forth in this session. Every exchange adds to it. You control it.</p>
+                            </div>
+                            <div class="detail-section signal-box">
+                                <h4>As Signal ✓</h4>
+                                <p>A focused conversation builds compounding signal. Each exchange reinforces shared understanding, making subsequent responses more precisely tuned.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Five exchanges refining a business proposal. By message six, the model deeply understands your goals, audience, and constraints.</p>
+                            </div>
+                        </div>
+
+                        <!-- Conversation - Noise -->
+                        <div class="detail-content" id="conversation-noise-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon conversation"></div>
+                                <h3>Conversation</h3>
+                                <span class="context-badge noise">Noise</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The accumulated back-and-forth in this session. Every exchange adds to it. You control it.</p>
+                            </div>
+                            <div class="detail-section noise-box">
+                                <h4>As Noise ✗</h4>
+                                <p>Topic pivots and tangents accumulate as noise. Old context interferes with new requests, pulling responses toward outdated frames.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>You discussed vacation planning, then pivoted to debugging code. The casual, planning-oriented tone bleeds into technical responses.</p>
+                            </div>
+                        </div>
+
+                        <!-- Message - Signal -->
+                        <div class="detail-content" id="message-signal-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon message"></div>
+                                <h3>Your Message</h3>
+                                <span class="context-badge signal">Signal</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The immediate instruction—what you type right now. Your highest-leverage input.</p>
+                            </div>
+                            <div class="detail-section signal-box">
+                                <h4>As Signal ✓</h4>
+                                <p>A clear, specific message that aligns with upstream context is pure signal. When everything points the same direction, your message has maximum amplification.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>Clean conversation history + relevant memory + clear request = your message cuts through cleanly with no competing noise.</p>
+                            </div>
+                        </div>
+
+                        <!-- Message - Noise -->
+                        <div class="detail-content" id="message-noise-detail">
+                            <div class="detail-header">
+                                <div class="layer-icon message"></div>
+                                <h3>Your Message</h3>
+                                <span class="context-badge noise">Noise</span>
+                            </div>
+                            <div class="detail-section">
+                                <h4>What It Is</h4>
+                                <p>The immediate instruction—what you type right now. Your highest-leverage input.</p>
+                            </div>
+                            <div class="detail-section noise-box">
+                                <h4>As Noise ✗</h4>
+                                <p>Even a perfect message becomes noise if it contradicts established context. You're adding signal, but upstream noise drowns it out.</p>
+                            </div>
+                            <div class="detail-example">
+                                <h4>Example</h4>
+                                <p>"Be brief" after 10 verbose exchanges. Your instruction adds signal, but it's fighting against the established pattern—net effect is noisy, inconsistent output.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization area -->
+                <div class="visualization-area">
+                    <div class="scenario-row">
+                        <!-- High Signal scenario -->
+                        <div class="scenario high-signal">
+                            <div class="scenario-header">
+                                <h2>✓ High Signal</h2>
+                                <p>Context reinforces intent</p>
+                            </div>
+
+                            <div class="signal-stack">
+                                <div class="signal-layer system" data-layer="system" data-scenario="signal">
+                                    <span class="layer-label">System</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,10 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Strong</span>
+                                    </div>
+                                </div>
+
+                                <div class="signal-layer memory" data-layer="memory" data-scenario="signal">
+                                    <span class="layer-label">Memory</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,8 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Strong</span>
+                                    </div>
+                                </div>
+
+                                <div class="signal-layer conversation" data-layer="conversation" data-scenario="signal">
+                                    <span class="layer-label">Conversation</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,6 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Strong</span>
+                                    </div>
+                                </div>
+
+                                <div class="signal-layer message" data-layer="message" data-scenario="signal">
+                                    <span class="layer-label">Your Message</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,4 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Strong</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="output-section">
+                                <div class="output-header">Combined Output</div>
+                                <div class="output-visualization">
+                                    <svg class="output-waveform" viewBox="0 0 300 50" preserveAspectRatio="none">
+                                        <path class="waveform-path" d="M0,25 Q15,5 30,25 T60,25 T90,25 T120,25 T150,25 T180,25 T210,25 T240,25 T270,25 T300,25"/>
+                                    </svg>
+                                    <div class="output-result">
+                                        <div class="result-label">Clean Output</div>
+                                        <div class="result-desc">Predictable, focused</div>
+                                    </div>
+                                </div>
+                                <div class="snr-meter">
+                                    <span class="snr-label">SNR</span>
+                                    <div class="snr-bar-container">
+                                        <div class="snr-bar"></div>
+                                    </div>
+                                    <span class="snr-value">High</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- High Noise scenario -->
+                        <div class="scenario high-noise">
+                            <div class="scenario-header">
+                                <h2>✗ High Noise</h2>
+                                <p>Context conflicts with intent</p>
+                            </div>
+
+                            <div class="signal-stack">
+                                <div class="signal-layer system" data-layer="system" data-scenario="noise">
+                                    <span class="layer-label">System</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,15 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                            <path class="waveform-path noise" d="M0,20 L5,15 L10,25 L15,18 L20,22 L25,16 L30,24 L35,19 L40,21 L45,17 L50,23 L55,18 L60,22 L65,16 L70,24 L75,19 L80,21 L85,17 L90,23 L95,18 L100,22 L105,16 L110,24 L115,19 L120,21 L125,17 L130,23 L135,18 L140,22 L145,16 L150,24 L155,19 L160,21 L165,17 L170,23 L175,18 L180,22 L185,16 L190,24 L195,19 L200,20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Weak</span>
+                                    </div>
+                                </div>
+
+                                <div class="signal-layer memory" data-layer="memory" data-scenario="noise">
+                                    <span class="layer-label">Memory</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,17 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                            <path class="waveform-path noise" d="M0,22 L8,12 L16,28 L24,14 L32,26 L40,16 L48,24 L56,13 L64,27 L72,15 L80,25 L88,14 L96,26 L104,16 L112,24 L120,13 L128,27 L136,15 L144,25 L152,14 L160,26 L168,16 L176,24 L184,13 L192,27 L200,18"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Weak</span>
+                                    </div>
+                                </div>
+
+                                <div class="signal-layer conversation" data-layer="conversation" data-scenario="noise">
+                                    <span class="layer-label">Conversation</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,18 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                            <path class="waveform-path noise" d="M0,18 L6,30 L12,10 L18,28 L24,12 L30,26 L36,14 L42,24 L48,11 L54,29 L60,13 L66,27 L72,15 L78,25 L84,12 L90,28 L96,14 L102,26 L108,11 L114,29 L120,13 L126,27 L132,15 L138,25 L144,12 L150,28 L156,14 L162,26 L168,11 L174,29 L180,13 L186,27 L192,15 L200,22"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Weak</span>
+                                    </div>
+                                </div>
+
+                                <div class="signal-layer message" data-layer="message" data-scenario="noise">
+                                    <span class="layer-label">Your Message</span>
+                                    <div class="waveform-container">
+                                        <svg class="waveform" viewBox="0 0 200 40" preserveAspectRatio="none">
+                                            <path class="waveform-path signal" d="M0,20 Q10,10 20,20 T40,20 T60,20 T80,20 T100,20 T120,20 T140,20 T160,20 T180,20 T200,20"/>
+                                            <path class="waveform-path noise" d="M0,20 L4,14 L8,26 L12,12 L16,28 L20,15 L24,25 L28,13 L32,27 L36,16 L40,24 L44,14 L48,26 L52,12 L56,28 L60,15 L64,25 L68,13 L72,27 L76,16 L80,24 L84,14 L88,26 L92,12 L96,28 L100,15 L104,25 L108,13 L112,27 L116,16 L120,24 L124,14 L128,26 L132,12 L136,28 L140,15 L144,25 L148,13 L152,27 L156,16 L160,24 L164,14 L168,26 L172,12 L176,28 L180,15 L184,25 L188,13 L192,27 L196,16 L200,20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="signal-indicator">
+                                        <div class="signal-bars">
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                            <div class="signal-bar"></div>
+                                        </div>
+                                        <span class="signal-label">Weak</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="output-section">
+                                <div class="output-header">Combined Output</div>
+                                <div class="output-visualization">
+                                    <svg class="output-waveform" viewBox="0 0 300 50" preserveAspectRatio="none">
+                                        <path class="waveform-path" d="M0,25 L8,18 L16,32 L24,15 L32,35 L40,20 L48,30 L56,12 L64,38 L72,22 L80,28 L88,16 L96,34 L104,19 L112,31 L120,14 L128,36 L136,21 L144,29 L152,17 L160,33 L168,20 L176,30 L184,15 L192,35 L200,22 L208,28 L216,18 L224,32 L232,21 L240,29 L248,16 L256,34 L264,23 L272,27 L280,19 L288,31 L296,24 L300,25"/>
+                                    </svg>
+                                    <div class="output-result">
+                                        <div class="result-label">Noisy Output</div>
+                                        <div class="result-desc">Unpredictable, scattered</div>
+                                    </div>
+                                </div>
+                                <div class="snr-meter">
+                                    <span class="snr-label">SNR</span>
+                                    <div class="snr-bar-container">
+                                        <div class="snr-bar"></div>
+                                    </div>
+                                    <span class="snr-value">Low</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Interactive layer selection
+        const signalLayers = document.querySelectorAll('.signal-layer');
+        const detailContents = document.querySelectorAll('.detail-content');
+
+        function selectLayer(layerName, scenario) {
+            // Update layer highlights
+            signalLayers.forEach(layer => {
+                layer.classList.toggle('highlighted', layer.dataset.layer === layerName);
+            });
+
+            // Update detail panel
+            detailContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const targetDetail = document.getElementById(`${layerName}-${scenario}-detail`);
+            if (targetDetail) {
+                targetDetail.classList.add('active');
+            }
+        }
+
+        // Add click handlers to signal layers
+        signalLayers.forEach(layer => {
+            layer.addEventListener('click', () => {
+                selectLayer(layer.dataset.layer, layer.dataset.scenario);
+            });
+        });
+    </script>
+</body>
+</html>

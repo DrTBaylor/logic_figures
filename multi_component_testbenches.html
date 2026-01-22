@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Testbenches & Integration</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #0a192f 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 12px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 1.4em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            margin: 2px 0 10px 0;
+            font-size: 0.95em;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .panel {
+            background: #0d1b2a;
+            border: 1px solid #546e7a;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            color: #cfd8dc;
+            margin-bottom: 6px;
+        }
+
+        svg {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 15% 20%, rgba(79, 195, 247, 0.08), rgba(13, 27, 42, 0.9));
+            border-radius: 10px;
+        }
+
+        .design-box {
+            fill: #10263d;
+            stroke: #4fc3f7;
+            stroke-width: 2;
+        }
+
+        .component-box {
+            fill: #0d1b2a;
+            stroke: #7e57c2;
+            stroke-width: 2;
+        }
+
+        .bench-box {
+            fill: #0a1524;
+            stroke: #ffb74d;
+            stroke-width: 2;
+        }
+
+        .bench-integration {
+            stroke: #4caf50;
+        }
+
+        .active-unit {
+            fill: rgba(255, 183, 77, 0.22);
+            stroke: #ffca28;
+            filter: drop-shadow(0 0 8px rgba(255, 183, 77, 0.4));
+        }
+
+        .active-integration {
+            fill: rgba(76, 175, 80, 0.18);
+            stroke: #66bb6a;
+            filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.35));
+        }
+
+        .label {
+            fill: #e0e0e0;
+            font-weight: 700;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-size: 12px;
+        }
+
+        .subtext {
+            fill: #90a4ae;
+            font-size: 11px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .arrow {
+            stroke: #cfd8dc;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowHead);
+        }
+
+        .arrow.unit {
+            stroke: #ffb74d;
+        }
+
+        .arrow.integration {
+            stroke: #4caf50;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9em;
+            color: #cfd8dc;
+        }
+
+        .legend-swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            border: 2px solid #546e7a;
+        }
+
+        .swatch-unit {
+            border-color: #ffb74d;
+            background: rgba(255, 183, 77, 0.2);
+        }
+
+        .swatch-integration {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+
+        .swatch-component {
+            border-color: #7e57c2;
+            background: rgba(126, 87, 194, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        button {
+            background: #1a237e;
+            color: #fff;
+            border: 1px solid #5c6bc0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            box-shadow: 0 0 8px rgba(79, 195, 247, 0.2);
+        }
+
+        button:hover {
+            border-color: #4fc3f7;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .status {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #cfd8dc;
+            margin-bottom: 6px;
+        }
+
+        .list {
+            margin: 0;
+            padding-left: 18px;
+            color: #cfd8dc;
+            font-size: 0.95em;
+            overflow-y: auto;
+        }
+
+        .note {
+            color: #90a4ae;
+            font-size: 0.92em;
+            line-height: 1.35;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #546e7a;
+            background: rgba(84, 110, 122, 0.2);
+            font-family: 'Courier New', monospace;
+        }
+
+        .pill.pass {
+            border-color: #4caf50;
+            color: #a5d6a7;
+        }
+
+        .pill.fail {
+            border-color: #ef5350;
+            color: #ef9a9a;
+        }
+
+        .pill.wait {
+            border-color: #ffb74d;
+            color: #ffd54f;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h1>Unit Benches + Integration Bench Mental Model</h1>
+        <div class="subtitle">Test each component in isolation, then exercise the stitched design with an integration
+            testbench.</div>
+    </div>
+
+    <div class="layout">
+        <div class="panel">
+            <div class="panel-title">Design & Testbenches</div>
+            <svg id="diagram" viewBox="0 0 820 420" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+                        <path d="M0,0 L6,3 L0,6 z" fill="#cfd8dc" />
+                    </marker>
+                </defs>
+            </svg>
+            <div class="legend">
+                <div class="legend-item"><span class="legend-swatch swatch-component"></span><span>Design / component
+                        blocks</span></div>
+                <div class="legend-item"><span class="legend-swatch swatch-unit"></span><span>Unit testbenches →
+                        component</span></div>
+                <div class="legend-item"><span class="legend-swatch swatch-integration"></span><span>Integration bench
+                        → stitched design</span></div>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Test plan</div>
+            <div class="status" id="status">Unit benches: waiting | Integration: waiting</div>
+            <div class="controls">
+                <button id="runUnits">Run unit benches</button>
+                <button id="runIntegration">Run integration bench</button>
+                <button id="reset">Reset</button>
+            </div>
+            <div class="panel-title">Sequence</div>
+            <ul class="list" id="log"></ul>
+            <div class="panel-title">Why both?</div>
+            <div class="note">Unit benches make it easy to poke and assert every port of a single module without other
+                logic in the way. The integration bench uses realistic traffic and timing to catch interface and wiring
+                issues between modules.</div>
+        </div>
+    </div>
+
+    <script>
+        const svg = document.getElementById('diagram');
+        const logEl = document.getElementById('log');
+        const statusEl = document.getElementById('status');
+        const runUnitsBtn = document.getElementById('runUnits');
+        const runIntegrationBtn = document.getElementById('runIntegration');
+        const resetBtn = document.getElementById('reset');
+
+        const nodes = {
+            top: { x: 430, y: 100, w: 300, h: 210, label: 'Top Design', sub: 'connects A + B' },
+            A: { x: 470, y: 130, w: 110, h: 60, label: 'Comp A', sub: 'ALU' },
+            B: { x: 470, y: 240, w: 110, h: 60, label: 'Comp B', sub: 'FIFO' },
+            tbA: { x: 80, y: 130, w: 140, h: 60, label: 'TB_A', sub: 'unit bench' },
+            tbB: { x: 80, y: 240, w: 140, h: 60, label: 'TB_B', sub: 'unit bench' },
+            tbTop: { x: 60, y: 330, w: 180, h: 60, label: 'TB_top', sub: 'integration bench' }
+        };
+
+        const connections = [
+            { from: 'tbA', to: 'A', type: 'unit' },
+            { from: 'tbB', to: 'B', type: 'unit' },
+            { from: 'tbTop', to: 'top', type: 'integration' }
+        ];
+
+        const results = {
+            unit: 'waiting',
+            integration: 'waiting'
+        };
+
+        const active = {
+            unit: false,
+            integration: false
+        };
+
+        function clearDiagram() {
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            defs.innerHTML = `<marker id="arrowHead" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+                        <path d="M0,0 L6,3 L0,6 z" fill="#cfd8dc" />
+                    </marker>`;
+            svg.appendChild(defs);
+        }
+
+        function drawNode(id, n, cls) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', n.x);
+            rect.setAttribute('y', n.y);
+            rect.setAttribute('width', n.w);
+            rect.setAttribute('height', n.h);
+            rect.setAttribute('rx', 10);
+            let classes = [cls];
+            if (active.unit && (id === 'tbA' || id === 'tbB' || id === 'A' || id === 'B')) {
+                classes.push('active-unit');
+            }
+            if (active.integration && (id === 'tbTop' || id === 'top')) {
+                classes.push('active-integration');
+            }
+            rect.setAttribute('class', classes.join(' '));
+            g.appendChild(rect);
+
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', n.x + n.w / 2);
+            label.setAttribute('y', n.y + n.h / 2 - 6);
+            label.setAttribute('class', 'label');
+            label.textContent = n.label;
+            g.appendChild(label);
+
+            if (n.sub) {
+                const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                sub.setAttribute('x', n.x + n.w / 2);
+                sub.setAttribute('y', n.y + n.h / 2 + 12);
+                sub.setAttribute('class', 'subtext');
+                sub.textContent = n.sub;
+                g.appendChild(sub);
+            }
+
+            svg.appendChild(g);
+        }
+
+        function drawArrow(from, to, type) {
+            const f = nodes[from];
+            const t = nodes[to];
+            const startX = f.x + f.w;
+            const startY = f.y + f.h / 2;
+            const endX = t.x;
+            const endY = t.y + t.h / 2;
+            const midX = (startX + endX) / 2;
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M${startX} ${startY} L${midX} ${startY} L${midX} ${endY} L${endX} ${endY}`);
+            path.setAttribute('class', `arrow ${type === 'unit' ? 'unit' : (type === 'integration' ? 'integration' : '')}`);
+            svg.appendChild(path);
+        }
+
+        function renderDiagram() {
+            clearDiagram();
+            // main design box
+            drawNode('top', nodes.top, 'design-box');
+            // components inside top
+            drawNode('A', nodes.A, 'component-box');
+            drawNode('B', nodes.B, 'component-box');
+            // benches
+            drawNode('tbA', nodes.tbA, 'bench-box');
+            drawNode('tbB', nodes.tbB, 'bench-box');
+            drawNode('tbTop', nodes.tbTop, 'bench-box bench-integration');
+            // arrows
+            connections.forEach(c => drawArrow(c.from, c.to, c.type));
+        }
+
+        function log(msg) {
+            const li = document.createElement('li');
+            li.textContent = msg;
+            logEl.appendChild(li);
+            while (logEl.childElementCount > 8) logEl.removeChild(logEl.firstChild);
+        }
+
+        function updateStatus() {
+            statusEl.textContent = `Unit benches: ${results.unit} | Integration: ${results.integration}`;
+        }
+
+        function runUnits() {
+            results.unit = 'pass';
+            active.unit = true;
+            log('Unit benches: TB_A and TB_B drove components and all checks passed.');
+            log('Each unit bench controlled its component directly (full visibility).');
+            updateStatus();
+            renderDiagram();
+        }
+
+        function runIntegration() {
+            results.integration = 'pass';
+            active.integration = true;
+            log('Integration bench: stitched design exercised with system-level traffic; checks passed.');
+            log('Caught wiring/timing issues that unit benches could miss.');
+            updateStatus();
+            renderDiagram();
+        }
+
+        function reset() {
+            results.unit = 'waiting';
+            results.integration = 'waiting';
+            active.unit = false;
+            active.integration = false;
+            logEl.innerHTML = '';
+            updateStatus();
+            renderDiagram();
+        }
+
+        runUnitsBtn.addEventListener('click', runUnits);
+        runIntegrationBtn.addEventListener('click', runIntegration);
+        resetBtn.addEventListener('click', reset);
+
+        renderDiagram();
+        updateStatus();
+    </script>
+</body>
+
+</html>
