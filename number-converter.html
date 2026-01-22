@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsigned Number Conversion Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: auto;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(135deg, #0f0f2e 0%, #1a1a3e 50%, #0f0f2e 100%);
+            padding: 35px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 38px;
+            color: #fff;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(100, 200, 255, 0.3);
+        }
+
+        /* Main layout */
+        .main-content {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 35px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Left panel - Input */
+        .input-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-section h3 {
+            font-size: 16px;
+            color: #8899bb;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #7788aa;
+            margin-bottom: 8px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .number-input {
+            flex: 1;
+            padding: 14px 16px;
+            font-size: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .number-input:focus {
+            border-color: rgba(100, 200, 255, 0.5);
+            box-shadow: 0 0 20px rgba(100, 200, 255, 0.2);
+        }
+
+        .number-input.binary:focus { border-color: #4ecdc4; }
+        .number-input.decimal:focus { border-color: #ffe66d; }
+        .number-input.hex:focus { border-color: #ff6b9d; }
+
+        .base-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .base-btn {
+            flex: 1;
+            padding: 14px 12px;
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #7788aa;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .base-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .base-btn.active.binary {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        .base-btn.active.decimal {
+            background: rgba(255, 230, 109, 0.2);
+            border-color: #ffe66d;
+            color: #ffe66d;
+        }
+
+        .base-btn.active.hex {
+            background: rgba(255, 107, 157, 0.2);
+            border-color: #ff6b9d;
+            color: #ff6b9d;
+        }
+
+        /* Results display */
+        .results-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .results-section h3 {
+            font-size: 14px;
+            color: #8899bb;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .result-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-row:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .result-row.active {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .result-row.binary.active { border-color: rgba(78, 205, 196, 0.5); }
+        .result-row.decimal.active { border-color: rgba(255, 230, 109, 0.5); }
+        .result-row.hex.active { border-color: rgba(255, 107, 157, 0.5); }
+
+        .result-label {
+            font-size: 12px;
+            color: #7788aa;
+            width: 80px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .result-value {
+            flex: 1;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .result-row.binary .result-value { color: #4ecdc4; }
+        .result-row.decimal .result-value { color: #ffe66d; }
+        .result-row.hex .result-value { color: #ff6b9d; }
+
+        .view-steps-hint {
+            font-size: 11px;
+            color: #556677;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .result-row:hover .view-steps-hint {
+            opacity: 1;
+        }
+
+        /* Quick reference */
+        .quick-ref {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .quick-ref h4 {
+            font-size: 12px;
+            color: #667788;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ref-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+        }
+
+        .ref-item {
+            text-align: center;
+            padding: 8px 4px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .ref-item .dec { font-size: 13px; color: #ffe66d; font-weight: 600; }
+        .ref-item .bin { font-size: 9px; color: #4ecdc4; font-family: 'Consolas', monospace; margin: 2px 0; }
+        .ref-item .hx { font-size: 11px; color: #ff6b9d; font-family: 'Consolas', monospace; font-weight: 600; }
+
+        /* Right panel - Animation */
+        .animation-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .animation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .animation-title {
+            font-size: 20px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .conversion-type {
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .conversion-type.bin-dec { background: linear-gradient(135deg, rgba(78, 205, 196, 0.3), rgba(255, 230, 109, 0.3)); color: #fff; }
+        .conversion-type.dec-bin { background: linear-gradient(135deg, rgba(255, 230, 109, 0.3), rgba(78, 205, 196, 0.3)); color: #fff; }
+        .conversion-type.bin-hex { background: linear-gradient(135deg, rgba(78, 205, 196, 0.3), rgba(255, 107, 157, 0.3)); color: #fff; }
+        .conversion-type.hex-bin { background: linear-gradient(135deg, rgba(255, 107, 157, 0.3), rgba(78, 205, 196, 0.3)); color: #fff; }
+        .conversion-type.dec-hex { background: linear-gradient(135deg, rgba(255, 230, 109, 0.3), rgba(255, 107, 157, 0.3)); color: #fff; }
+        .conversion-type.hex-dec { background: linear-gradient(135deg, rgba(255, 107, 157, 0.3), rgba(255, 230, 109, 0.3)); color: #fff; }
+
+        .animation-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .control-btn.primary {
+            background: linear-gradient(135deg, #4ecdc4, #44a8a0);
+        }
+
+        .control-btn.primary:hover {
+            background: linear-gradient(135deg, #5ed9d0, #4ecdc4);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            color: #7788aa;
+            font-size: 13px;
+        }
+
+        .speed-slider {
+            width: 100px;
+            accent-color: #4ecdc4;
+        }
+
+        .step-indicator {
+            margin-left: auto;
+            font-size: 14px;
+            color: #7788aa;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        /* Steps container */
+        .steps-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .steps-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .steps-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .steps-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        /* Step styles */
+        .step {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease-out;
+            border-left: 4px solid transparent;
+        }
+
+        .step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .step.active {
+            background: rgba(0, 0, 0, 0.5);
+            border-left-color: #4ecdc4;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: rgba(78, 205, 196, 0.2);
+            border-radius: 50%;
+            color: #4ecdc4;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .step-title {
+            font-size: 16px;
+            color: #fff;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .step-content {
+            font-size: 15px;
+            color: #aabbcc;
+            line-height: 1.6;
+        }
+
+        .step-math {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .highlight-bin { color: #4ecdc4; font-weight: 600; }
+        .highlight-dec { color: #ffe66d; font-weight: 600; }
+        .highlight-hex { color: #ff6b9d; font-weight: 600; }
+        .operator { color: #7788aa; }
+        .equals { color: #fff; margin: 0 8px; }
+
+        /* Bit breakdown visualization */
+        .bit-breakdown {
+            display: flex;
+            gap: 4px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .bit-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(78, 205, 196, 0.1);
+            border-radius: 8px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease-out;
+        }
+
+        .bit-cell.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .bit-cell.zero {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .bit-cell .bit {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4ecdc4;
+            font-family: 'Consolas', monospace;
+        }
+
+        .bit-cell.zero .bit {
+            color: #556677;
+        }
+
+        .bit-cell .power {
+            font-size: 11px;
+            color: #7788aa;
+            margin-top: 4px;
+        }
+
+        .bit-cell .value {
+            font-size: 14px;
+            color: #ffe66d;
+            margin-top: 4px;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* Division table */
+        .division-table {
+            margin-top: 12px;
+        }
+
+        .division-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 16px;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.4s ease-out;
+        }
+
+        .division-row.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .division-row .dividend { color: #ffe66d; width: 80px; }
+        .division-row .operation { color: #7788aa; width: 60px; }
+        .division-row .quotient { color: #aabbcc; width: 80px; }
+        .division-row .remainder-label { color: #7788aa; width: 30px; }
+        .division-row .remainder { color: #4ecdc4; font-weight: 700; font-size: 20px; }
+
+        /* Hex grouping */
+        .hex-groups {
+            display: flex;
+            gap: 20px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hex-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.4s ease-out;
+        }
+
+        .hex-group.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .hex-group .bits {
+            font-size: 24px;
+            font-family: 'Consolas', monospace;
+            color: #4ecdc4;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+
+        .hex-group .arrow {
+            color: #556677;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .hex-group .decimal-val {
+            font-size: 14px;
+            color: #ffe66d;
+            margin-bottom: 4px;
+        }
+
+        .hex-group .hex-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ff6b9d;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* Final result */
+        .final-result {
+            margin-top: 20px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(255, 230, 109, 0.1));
+            border-radius: 16px;
+            text-align: center;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.5s ease-out;
+        }
+
+        .final-result.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .final-result .label {
+            font-size: 14px;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .final-result .values {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .final-result .value-box {
+            text-align: center;
+        }
+
+        .final-result .value-box .type {
+            font-size: 12px;
+            color: #7788aa;
+            margin-bottom: 6px;
+        }
+
+        .final-result .value-box .num {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .final-result .value-box.binary .num { color: #4ecdc4; }
+        .final-result .value-box.decimal .num { color: #ffe66d; }
+        .final-result .value-box.hex .num { color: #ff6b9d; }
+
+        .final-result .equals-sign {
+            font-size: 28px;
+            color: #556677;
+        }
+
+        /* Empty state */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #556677;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state span {
+            font-size: 14px;
+            color: #445566;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <!-- Header -->
+            <div class="header">
+                <h1>Unsigned Number Conversion Calculator</h1>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Left Panel: Input -->
+                <div class="input-panel">
+                    <div class="input-section">
+                        <h3>Enter a Number</h3>
+                        <div class="input-group">
+                            <label>Select input base:</label>
+                            <div class="base-selector">
+                                <button class="base-btn binary" data-base="2" onclick="setBase(2)">Binary</button>
+                                <button class="base-btn decimal active" data-base="10" onclick="setBase(10)">Decimal</button>
+                                <button class="base-btn hex" data-base="16" onclick="setBase(16)">Hex</button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Enter value:</label>
+                            <input type="text" class="number-input decimal" id="numberInput" placeholder="Enter a number..." oninput="handleInput()">
+                        </div>
+                    </div>
+
+                    <div class="results-section">
+                        <h3>Converted Values</h3>
+                        <div class="result-row binary" onclick="showConversion('binary')">
+                            <span class="result-label">Binary</span>
+                            <span class="result-value" id="binaryResult">—</span>
+                            <span class="view-steps-hint">Click to see steps →</span>
+                        </div>
+                        <div class="result-row decimal" onclick="showConversion('decimal')">
+                            <span class="result-label">Decimal</span>
+                            <span class="result-value" id="decimalResult">—</span>
+                            <span class="view-steps-hint">Click to see steps →</span>
+                        </div>
+                        <div class="result-row hex" onclick="showConversion('hex')">
+                            <span class="result-label">Hex</span>
+                            <span class="result-value" id="hexResult">—</span>
+                            <span class="view-steps-hint">Click to see steps →</span>
+                        </div>
+                    </div>
+
+                    <div class="quick-ref">
+                        <h4>Reference (0-15)</h4>
+                        <div class="ref-grid">
+                            <div class="ref-item"><div class="dec">0</div><div class="bin">0000</div><div class="hx">0</div></div>
+                            <div class="ref-item"><div class="dec">1</div><div class="bin">0001</div><div class="hx">1</div></div>
+                            <div class="ref-item"><div class="dec">2</div><div class="bin">0010</div><div class="hx">2</div></div>
+                            <div class="ref-item"><div class="dec">3</div><div class="bin">0011</div><div class="hx">3</div></div>
+                            <div class="ref-item"><div class="dec">4</div><div class="bin">0100</div><div class="hx">4</div></div>
+                            <div class="ref-item"><div class="dec">5</div><div class="bin">0101</div><div class="hx">5</div></div>
+                            <div class="ref-item"><div class="dec">6</div><div class="bin">0110</div><div class="hx">6</div></div>
+                            <div class="ref-item"><div class="dec">7</div><div class="bin">0111</div><div class="hx">7</div></div>
+                        </div>
+                        <div class="ref-grid" style="margin-top: 6px;">
+                            <div class="ref-item"><div class="dec">8</div><div class="bin">1000</div><div class="hx">8</div></div>
+                            <div class="ref-item"><div class="dec">9</div><div class="bin">1001</div><div class="hx">9</div></div>
+                            <div class="ref-item"><div class="dec">10</div><div class="bin">1010</div><div class="hx">A</div></div>
+                            <div class="ref-item"><div class="dec">11</div><div class="bin">1011</div><div class="hx">B</div></div>
+                            <div class="ref-item"><div class="dec">12</div><div class="bin">1100</div><div class="hx">C</div></div>
+                            <div class="ref-item"><div class="dec">13</div><div class="bin">1101</div><div class="hx">D</div></div>
+                            <div class="ref-item"><div class="dec">14</div><div class="bin">1110</div><div class="hx">E</div></div>
+                            <div class="ref-item"><div class="dec">15</div><div class="bin">1111</div><div class="hx">F</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Animation -->
+                <div class="animation-panel">
+                    <div class="animation-header">
+                        <span class="animation-title">Conversion Steps</span>
+                        <span class="conversion-type" id="conversionType" style="display: none;"></span>
+                    </div>
+                    
+                    <div class="animation-controls" id="animationControls" style="display: none;">
+                        <button class="control-btn primary" onclick="nextStep()">
+                            Next Step
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                        </button>
+                        <button class="control-btn" onclick="prevStep()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                            Previous
+                        </button>
+                        <button class="control-btn" onclick="resetAnimation()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+                            Reset
+                        </button>
+                        <button class="control-btn" onclick="showAllSteps()">
+                            Show All
+                        </button>
+                        <span class="step-indicator" id="stepIndicator"></span>
+                    </div>
+
+                    <div class="steps-container" id="stepsContainer">
+                        <div class="empty-state" id="emptyState">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                            <p>Enter a number to see conversion steps</p>
+                            <span>Click on a result to animate its conversion</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        let currentBase = 10;
+        let currentValue = null;
+        let animationSteps = [];
+        let currentStepIndex = 0;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            surface.style.transform = `scale(${containerWidth / DESIGN_WIDTH})`;
+        }
+
+        autoResize();
+        window.addEventListener('resize', () => {
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        function setBase(base) {
+            currentBase = base;
+            document.querySelectorAll('.base-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.base) === base) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            const input = document.getElementById('numberInput');
+            input.className = 'number-input ' + (base === 2 ? 'binary' : base === 10 ? 'decimal' : 'hex');
+            input.placeholder = base === 2 ? 'e.g., 1101' : base === 10 ? 'e.g., 202' : 'e.g., CA';
+            input.value = '';
+            clearResults();
+        }
+
+        function handleInput() {
+            const input = document.getElementById('numberInput').value.trim().toUpperCase();
+            
+            if (!input) {
+                clearResults();
+                return;
+            }
+
+            // Validate input based on current base
+            let valid = false;
+            if (currentBase === 2) {
+                valid = /^[01]+$/.test(input);
+            } else if (currentBase === 10) {
+                valid = /^[0-9]+$/.test(input);
+            } else {
+                valid = /^[0-9A-F]+$/.test(input);
+            }
+
+            if (!valid) {
+                clearResults();
+                return;
+            }
+
+            currentValue = parseInt(input, currentBase);
+            
+            if (isNaN(currentValue) || currentValue < 0) {
+                clearResults();
+                return;
+            }
+
+            // Update results
+            document.getElementById('binaryResult').textContent = currentValue.toString(2);
+            document.getElementById('decimalResult').textContent = currentValue.toString(10);
+            document.getElementById('hexResult').textContent = currentValue.toString(16).toUpperCase();
+
+            // Clear active states
+            document.querySelectorAll('.result-row').forEach(row => row.classList.remove('active'));
+        }
+
+        function clearResults() {
+            currentValue = null;
+            document.getElementById('binaryResult').textContent = '—';
+            document.getElementById('decimalResult').textContent = '—';
+            document.getElementById('hexResult').textContent = '—';
+            document.getElementById('stepsContainer').innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                    </svg>
+                    <p>Enter a number to see conversion steps</p>
+                    <span>Click on a result to animate its conversion</span>
+                </div>
+            `;
+            document.getElementById('animationControls').style.display = 'none';
+            document.getElementById('conversionType').style.display = 'none';
+        }
+
+        function showConversion(targetBase) {
+            if (currentValue === null) return;
+
+            // Update active state
+            document.querySelectorAll('.result-row').forEach(row => row.classList.remove('active'));
+            document.querySelector(`.result-row.${targetBase}`).classList.add('active');
+
+            // Determine conversion type
+            const sourceBase = currentBase === 2 ? 'binary' : currentBase === 10 ? 'decimal' : 'hex';
+            
+            if (sourceBase === targetBase) {
+                showSameBaseMessage(targetBase);
+                return;
+            }
+
+            // Show controls
+            document.getElementById('animationControls').style.display = 'flex';
+            
+            // Set conversion type label
+            const typeLabel = document.getElementById('conversionType');
+            typeLabel.style.display = 'block';
+            typeLabel.className = 'conversion-type ' + sourceBase.slice(0, 3) + '-' + targetBase.slice(0, 3);
+            typeLabel.textContent = `${sourceBase.charAt(0).toUpperCase() + sourceBase.slice(1)} → ${targetBase.charAt(0).toUpperCase() + targetBase.slice(1)}`;
+
+            // Generate steps
+            generateSteps(sourceBase, targetBase);
+            resetAnimation();
+        }
+
+        function showSameBaseMessage(base) {
+            document.getElementById('animationControls').style.display = 'none';
+            document.getElementById('conversionType').style.display = 'none';
+            document.getElementById('stepsContainer').innerHTML = `
+                <div class="empty-state">
+                    <p>No conversion needed!</p>
+                    <span>The input is already in ${base} format</span>
+                </div>
+            `;
+        }
+
+        function generateSteps(source, target) {
+            animationSteps = [];
+            const input = document.getElementById('numberInput').value.trim().toUpperCase();
+
+            if (source === 'binary' && target === 'decimal') {
+                generateBinaryToDecimal(input);
+            } else if (source === 'decimal' && target === 'binary') {
+                generateDecimalToBinary(currentValue);
+            } else if (source === 'binary' && target === 'hex') {
+                generateBinaryToHex(input);
+            } else if (source === 'hex' && target === 'binary') {
+                generateHexToBinary(input);
+            } else if (source === 'decimal' && target === 'hex') {
+                generateDecimalToHex(currentValue);
+            } else if (source === 'hex' && target === 'decimal') {
+                generateHexToDecimal(input);
+            }
+
+            renderSteps();
+        }
+
+        function generateBinaryToDecimal(binary) {
+            const bits = binary.split('');
+            const len = bits.length;
+
+            animationSteps.push({
+                title: 'Identify place values',
+                content: 'Each bit position represents a power of 2, starting from 2⁰ on the right.',
+                html: `<div class="bit-breakdown" id="bitBreakdown">
+                    ${bits.map((bit, i) => `
+                        <div class="bit-cell ${bit === '0' ? 'zero' : ''}" data-index="${i}">
+                            <div class="bit">${bit}</div>
+                            <div class="power">2<sup>${len - 1 - i}</sup></div>
+                            <div class="value">${bit === '1' ? Math.pow(2, len - 1 - i) : '0'}</div>
+                        </div>
+                    `).join('')}
+                </div>`
+            });
+
+            const nonZeroBits = bits.map((bit, i) => ({ bit, power: len - 1 - i, value: Math.pow(2, len - 1 - i) })).filter(b => b.bit === '1');
+            
+            animationSteps.push({
+                title: 'Sum the values where bit = 1',
+                content: 'Add up all the place values where the bit is 1.',
+                html: `<div class="step-math">
+                    ${nonZeroBits.map(b => `<span class="highlight-dec">${b.value}</span>`).join('<span class="operator"> + </span>')}
+                    <span class="equals">=</span>
+                    <span class="highlight-dec">${currentValue}</span>
+                </div>`
+            });
+
+            addFinalResult('binary', 'decimal');
+        }
+
+        function generateDecimalToBinary(decimal) {
+            const divisions = [];
+            let quotient = decimal;
+            
+            while (quotient > 0) {
+                divisions.push({
+                    dividend: quotient,
+                    divisor: 2,
+                    result: Math.floor(quotient / 2),
+                    remainder: quotient % 2
+                });
+                quotient = Math.floor(quotient / 2);
+            }
+
+            animationSteps.push({
+                title: 'Divide by 2 repeatedly',
+                content: 'Keep dividing the number by 2 and track the remainders.',
+                html: `<div class="division-table" id="divisionTable">
+                    ${divisions.map((d, i) => `
+                        <div class="division-row" data-index="${i}">
+                            <span class="dividend">${d.dividend}</span>
+                            <span class="operation">÷ 2 =</span>
+                            <span class="quotient">${d.result}</span>
+                            <span class="remainder-label">r</span>
+                            <span class="remainder">${d.remainder}</span>
+                        </div>
+                    `).join('')}
+                </div>`
+            });
+
+            animationSteps.push({
+                title: 'Read remainders bottom to top',
+                content: 'The binary number is formed by reading the remainders from last to first.',
+                html: `<div class="step-math">
+                    <span class="operator">Remainders:</span>
+                    ${divisions.map(d => `<span class="highlight-bin">${d.remainder}</span>`).reverse().join('')}
+                    <span class="equals">=</span>
+                    <span class="highlight-bin">${decimal.toString(2)}</span>
+                </div>`
+            });
+
+            addFinalResult('decimal', 'binary');
+        }
+
+        function generateBinaryToHex(binary) {
+            // Pad to multiple of 4
+            const padded = binary.padStart(Math.ceil(binary.length / 4) * 4, '0');
+            const groups = [];
+            
+            for (let i = 0; i < padded.length; i += 4) {
+                const nibble = padded.slice(i, i + 4);
+                const decimal = parseInt(nibble, 2);
+                const hex = decimal.toString(16).toUpperCase();
+                groups.push({ nibble, decimal, hex });
+            }
+
+            animationSteps.push({
+                title: 'Group into 4-bit nibbles',
+                content: 'Split the binary number into groups of 4 bits, starting from the right.',
+                html: `<div class="hex-groups" id="hexGroups">
+                    ${groups.map((g, i) => `
+                        <div class="hex-group" data-index="${i}">
+                            <div class="bits">${g.nibble}</div>
+                            <div class="arrow">↓</div>
+                            <div class="decimal-val">= ${g.decimal}</div>
+                            <div class="hex-val">${g.hex}</div>
+                        </div>
+                    `).join('')}
+                </div>`
+            });
+
+            animationSteps.push({
+                title: 'Combine hex digits',
+                content: 'Join all the hex digits together to get the final result.',
+                html: `<div class="step-math">
+                    ${groups.map(g => `<span class="highlight-hex">${g.hex}</span>`).join('')}
+                    <span class="equals">=</span>
+                    <span class="highlight-hex">${currentValue.toString(16).toUpperCase()}</span>
+                </div>`
+            });
+
+            addFinalResult('binary', 'hex');
+        }
+
+        function generateHexToBinary(hex) {
+            const digits = hex.split('');
+            const groups = digits.map(d => ({
+                hex: d,
+                decimal: parseInt(d, 16),
+                binary: parseInt(d, 16).toString(2).padStart(4, '0')
+            }));
+
+            animationSteps.push({
+                title: 'Convert each hex digit to 4 bits',
+                content: 'Each hexadecimal digit converts to exactly 4 binary bits.',
+                html: `<div class="hex-groups" id="hexGroups">
+                    ${groups.map((g, i) => `
+                        <div class="hex-group" data-index="${i}">
+                            <div class="hex-val" style="margin-bottom: 8px;">${g.hex}</div>
+                            <div class="arrow">↓</div>
+                            <div class="decimal-val">= ${g.decimal}</div>
+                            <div class="bits">${g.binary}</div>
+                        </div>
+                    `).join('')}
+                </div>`
+            });
+
+            animationSteps.push({
+                title: 'Combine binary groups',
+                content: 'Join all the 4-bit groups together.',
+                html: `<div class="step-math">
+                    ${groups.map(g => `<span class="highlight-bin">${g.binary}</span>`).join(' ')}
+                    <span class="equals">=</span>
+                    <span class="highlight-bin">${currentValue.toString(2)}</span>
+                </div>`
+            });
+
+            addFinalResult('hex', 'binary');
+        }
+
+        function generateDecimalToHex(decimal) {
+            const divisions = [];
+            let quotient = decimal;
+            
+            while (quotient > 0) {
+                const remainder = quotient % 16;
+                divisions.push({
+                    dividend: quotient,
+                    divisor: 16,
+                    result: Math.floor(quotient / 16),
+                    remainder: remainder,
+                    hexRemainder: remainder.toString(16).toUpperCase()
+                });
+                quotient = Math.floor(quotient / 16);
+            }
+
+            animationSteps.push({
+                title: 'Divide by 16 repeatedly',
+                content: 'Keep dividing the number by 16 and convert remainders to hex.',
+                html: `<div class="division-table" id="divisionTable">
+                    ${divisions.map((d, i) => `
+                        <div class="division-row" data-index="${i}">
+                            <span class="dividend">${d.dividend}</span>
+                            <span class="operation">÷ 16 =</span>
+                            <span class="quotient">${d.result}</span>
+                            <span class="remainder-label">r</span>
+                            <span class="remainder" style="color: #ff6b9d;">${d.remainder} (${d.hexRemainder})</span>
+                        </div>
+                    `).join('')}
+                </div>`
+            });
+
+            animationSteps.push({
+                title: 'Read hex digits bottom to top',
+                content: 'Form the hex number by reading the hex remainders from last to first.',
+                html: `<div class="step-math">
+                    <span class="operator">Hex digits:</span>
+                    ${divisions.map(d => `<span class="highlight-hex">${d.hexRemainder}</span>`).reverse().join('')}
+                    <span class="equals">=</span>
+                    <span class="highlight-hex">${decimal.toString(16).toUpperCase()}</span>
+                </div>`
+            });
+
+            addFinalResult('decimal', 'hex');
+        }
+
+        function generateHexToDecimal(hex) {
+            const digits = hex.split('');
+            const len = digits.length;
+            const values = digits.map((d, i) => ({
+                digit: d,
+                decimal: parseInt(d, 16),
+                power: len - 1 - i,
+                value: parseInt(d, 16) * Math.pow(16, len - 1 - i)
+            }));
+
+            animationSteps.push({
+                title: 'Identify place values',
+                content: 'Each hex digit position represents a power of 16.',
+                html: `<div class="bit-breakdown" id="bitBreakdown">
+                    ${values.map((v, i) => `
+                        <div class="bit-cell" data-index="${i}" style="background: rgba(255, 107, 157, 0.1);">
+                            <div class="bit" style="color: #ff6b9d;">${v.digit}</div>
+                            <div class="power">16<sup>${v.power}</sup></div>
+                            <div class="value">${v.decimal} × ${Math.pow(16, v.power)} = ${v.value}</div>
+                        </div>
+                    `).join('')}
+                </div>`
+            });
+
+            animationSteps.push({
+                title: 'Sum all values',
+                content: 'Add up all the calculated values.',
+                html: `<div class="step-math">
+                    ${values.map(v => `<span class="highlight-dec">${v.value}</span>`).join('<span class="operator"> + </span>')}
+                    <span class="equals">=</span>
+                    <span class="highlight-dec">${currentValue}</span>
+                </div>`
+            });
+
+            addFinalResult('hex', 'decimal');
+        }
+
+        function addFinalResult(source, target) {
+            animationSteps.push({
+                isFinal: true,
+                html: `<div class="final-result">
+                    <div class="label">Conversion Complete</div>
+                    <div class="values">
+                        <div class="value-box ${source}">
+                            <div class="type">${source}</div>
+                            <div class="num">${source === 'binary' ? currentValue.toString(2) : source === 'decimal' ? currentValue : currentValue.toString(16).toUpperCase()}</div>
+                        </div>
+                        <div class="equals-sign">=</div>
+                        <div class="value-box ${target}">
+                            <div class="type">${target}</div>
+                            <div class="num">${target === 'binary' ? currentValue.toString(2) : target === 'decimal' ? currentValue : currentValue.toString(16).toUpperCase()}</div>
+                        </div>
+                    </div>
+                </div>`
+            });
+        }
+
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = animationSteps.map((step, i) => {
+                if (step.isFinal) {
+                    return `<div class="step final" data-step="${i}">${step.html}</div>`;
+                }
+                return `
+                    <div class="step" data-step="${i}">
+                        <div class="step-title">
+                            <span class="step-number">${i + 1}</span>
+                            ${step.title}
+                        </div>
+                        <div class="step-content">${step.content}</div>
+                        ${step.html}
+                    </div>
+                `;
+            }).join('');
+            
+            updateStepIndicator();
+        }
+
+        function updateStepIndicator() {
+            const indicator = document.getElementById('stepIndicator');
+            if (animationSteps.length > 0) {
+                indicator.textContent = `Step ${Math.min(currentStepIndex, animationSteps.length)} of ${animationSteps.length}`;
+            } else {
+                indicator.textContent = '';
+            }
+        }
+
+        function nextStep() {
+            if (currentStepIndex >= animationSteps.length) return;
+
+            const step = document.querySelector(`[data-step="${currentStepIndex}"]`);
+            if (step) {
+                step.classList.add('visible', 'active');
+                
+                // Animate inner elements
+                const innerElements = step.querySelectorAll('.bit-cell, .division-row, .hex-group');
+                innerElements.forEach((el, i) => {
+                    setTimeout(() => el.classList.add('visible'), i * 80);
+                });
+
+                if (animationSteps[currentStepIndex].isFinal) {
+                    setTimeout(() => {
+                        const finalResult = step.querySelector('.final-result');
+                        if (finalResult) finalResult.classList.add('visible');
+                    }, 150);
+                }
+
+                // Remove active from previous
+                if (currentStepIndex > 0) {
+                    const prevStepEl = document.querySelector(`[data-step="${currentStepIndex - 1}"]`);
+                    if (prevStepEl) prevStepEl.classList.remove('active');
+                }
+
+                step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            currentStepIndex++;
+            updateStepIndicator();
+        }
+
+        function prevStep() {
+            if (currentStepIndex <= 0) return;
+
+            currentStepIndex--;
+
+            // Hide the current step
+            const step = document.querySelector(`[data-step="${currentStepIndex}"]`);
+            if (step) {
+                step.classList.remove('visible', 'active');
+                
+                // Hide inner elements
+                const innerElements = step.querySelectorAll('.bit-cell, .division-row, .hex-group, .final-result');
+                innerElements.forEach(el => el.classList.remove('visible'));
+            }
+
+            // Make the previous step active again
+            if (currentStepIndex > 0) {
+                const prevStepEl = document.querySelector(`[data-step="${currentStepIndex - 1}"]`);
+                if (prevStepEl) prevStepEl.classList.add('active');
+            }
+
+            updateStepIndicator();
+        }
+
+        function resetAnimation() {
+            currentStepIndex = 0;
+            
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('visible', 'active');
+            });
+            document.querySelectorAll('.bit-cell, .division-row, .hex-group, .final-result').forEach(el => {
+                el.classList.remove('visible');
+            });
+            
+            updateStepIndicator();
+        }
+
+        function showAllSteps() {
+            currentStepIndex = animationSteps.length;
+            
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.add('visible');
+                step.classList.remove('active');
+            });
+            document.querySelectorAll('.bit-cell, .division-row, .hex-group, .final-result').forEach(el => {
+                el.classList.add('visible');
+            });
+            
+            updateStepIndicator();
+        }
+
+        // Initialize
+        document.getElementById('numberInput').focus();
+    </script>
+</body>
+</html>

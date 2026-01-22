@@ -7,6 +7,7 @@ Interactive HTML figures and infographics hosted at [drtlinks.org](https://drtli
 - [AI Context Infographic](ai-context-infographic.html)
 - [AI Context Infographic v2](ai-context-infographic-v2.html)
 - [AI Signal Noise Infographic](ai-signal-noise-infographic.html)
+- [AI Use Case Primitives](ai-use-case-primitives_1.html)
 - [Context Lifecycle Infographic](context-lifecycle-infographic%20(1).html)
 - [Modes of Processing Infographic](modes-of-processing-infographic.html)
 - [Prompting Strategies Infographic](prompting-strategies-infographic.html)
@@ -21,7 +22,10 @@ Interactive HTML figures and infographics hosted at [drtlinks.org](https://drtli
 - [FPGA Structure](fpga_structure.html)
 - [FSM Interaction](fsm_interaction.html)
 - [Memory Pyramid](memory_pyramid.html)
+- [Noise Immunity](noise-immunity_2.html)
+- [Noise Immunity (alt)](noise-immunity_3.html)
 - [Nonvolatile Memory Figure](nonvolatile-memory-figure.html)
+- [Number Converter](number-converter.html)
 - [SR Latch Interactive](sr_latch_interactive.html)
 
 ## Multiplexers
