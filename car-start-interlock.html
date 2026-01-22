@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boolean Logic: Car Engine Start Interlock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%);
+            color: #e8e8e8;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 38px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            color: #8892a0;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 40px;
+            flex: 1;
+        }
+        
+        /* Left Panel - Car Interior */
+        .car-panel {
+            width: 520px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #a8b4c4;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .car-scene {
+            flex: 1;
+            background: linear-gradient(180deg, #1a1e28 0%, #12151c 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Dashboard area */
+        .dashboard {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 160px;
+            background: linear-gradient(180deg, #2a2e38 0%, #1e2228 100%);
+            border-radius: 12px;
+            border: 2px solid #3a3e48;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+        }
+        
+        /* Start button */
+        .start-button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .start-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2a2e38 0%, #1a1e28 100%);
+            border: 4px solid #3a3e48;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .start-button.ready {
+            border-color: #22c55e;
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+        }
+        
+        .start-button.ready .start-icon {
+            color: #22c55e;
+        }
+        
+        .start-button.active {
+            background: linear-gradient(145deg, #22c55e 0%, #16a34a 100%);
+            border-color: #4ade80;
+            box-shadow: 0 0 40px rgba(34, 197, 94, 0.6);
+        }
+        
+        .start-button.active .start-icon,
+        .start-button.active .start-text {
+            color: white;
+        }
+        
+        .start-icon {
+            font-size: 28px;
+            color: #6a7080;
+            transition: color 0.3s ease;
+        }
+        
+        .start-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6a7080;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+        
+        .start-label {
+            font-size: 12px;
+            color: #6a7080;
+        }
+        
+        /* Dashboard indicator */
+        .dash-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .indicator-display {
+            width: 140px;
+            height: 50px;
+            background: #0a0c10;
+            border-radius: 8px;
+            border: 2px solid #3a3e48;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .indicator-display.not-ready {
+            color: #6a7080;
+        }
+        
+        .indicator-display.ready {
+            color: #22c55e;
+            border-color: #22c55e;
+            box-shadow: inset 0 0 20px rgba(34, 197, 94, 0.2);
+        }
+        
+        .indicator-display.running {
+            color: #3b82f6;
+            border-color: #3b82f6;
+            box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+        
+        .indicator-label {
+            font-size: 12px;
+            color: #6a7080;
+        }
+        
+        /* Center console area */
+        .center-console {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 60px;
+            align-items: flex-end;
+        }
+        
+        /* Brake pedal */
+        .brake-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .brake-pedal {
+            width: 70px;
+            height: 100px;
+            background: linear-gradient(180deg, #3a3e48 0%, #2a2e38 100%);
+            border-radius: 8px;
+            border: 3px solid #4a4e58;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .brake-pedal.pressed {
+            transform: perspective(100px) rotateX(15deg);
+            background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+            border-color: #f87171;
+            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.4);
+        }
+        
+        .brake-surface {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            background: repeating-linear-gradient(
+                0deg,
+                #4a4e58 0px,
+                #4a4e58 4px,
+                #3a3e48 4px,
+                #3a3e48 8px
+            );
+            border-radius: 4px;
+        }
+        
+        .brake-pedal.pressed .brake-surface {
+            background: repeating-linear-gradient(
+                0deg,
+                #f87171 0px,
+                #f87171 4px,
+                #ef4444 4px,
+                #ef4444 8px
+            );
+        }
+        
+        .brake-label {
+            font-size: 13px;
+            color: #8892a0;
+        }
+        
+        .brake-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            background: rgba(107, 114, 128, 0.2);
+            color: #6a7080;
+            transition: all 0.3s ease;
+        }
+        
+        .brake-value.active {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        /* Gear selector */
+        .gear-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .gear-selector {
+            background: linear-gradient(180deg, #2a2e38 0%, #1a1e28 100%);
+            border-radius: 12px;
+            border: 3px solid #3a3e48;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .gear-option {
+            width: 50px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #4a5060;
+            background: #1a1e28;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .gear-option:hover {
+            background: #2a2e38;
+            color: #8892a0;
+        }
+        
+        .gear-option.selected {
+            color: white;
+            border-color: currentColor;
+        }
+        
+        .gear-option.selected.park {
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+        
+        .gear-option.selected.reverse {
+            background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);
+        }
+        
+        .gear-option.selected.neutral {
+            background: linear-gradient(180deg, #eab308 0%, #ca8a04 100%);
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
+        }
+        
+        .gear-option.selected.drive {
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .gear-label {
+            font-size: 13px;
+            color: #8892a0;
+        }
+        
+        .gear-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .gear-value.valid {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .gear-value.invalid {
+            background: rgba(107, 114, 128, 0.2);
+            color: #6a7080;
+        }
+        
+        /* Key fob area */
+        .fob-area {
+            position: absolute;
+            top: 200px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .key-fob {
+            width: 60px;
+            height: 90px;
+            background: linear-gradient(180deg, #3a3e48 0%, #2a2e38 100%);
+            border-radius: 10px;
+            border: 2px solid #4a4e58;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .key-fob.detected {
+            border-color: #22c55e;
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.4);
+        }
+        
+        .fob-ring {
+            width: 20px;
+            height: 10px;
+            border: 3px solid #5a5e68;
+            border-radius: 5px 5px 0 0;
+            border-bottom: none;
+            position: absolute;
+            top: -8px;
+        }
+        
+        .fob-button {
+            width: 20px;
+            height: 20px;
+            background: #1a1e28;
+            border-radius: 4px;
+            border: 1px solid #4a4e58;
+        }
+        
+        .fob-led {
+            width: 8px;
+            height: 8px;
+            background: #3a3e48;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .key-fob.detected .fob-led {
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+        
+        .fob-label {
+            font-size: 13px;
+            color: #8892a0;
+        }
+        
+        .fob-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .fob-value.detected {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .fob-value.not-detected {
+            background: rgba(107, 114, 128, 0.2);
+            color: #6a7080;
+        }
+        
+        /* Wireless signal waves */
+        .signal-waves {
+            position: absolute;
+            top: 195px;
+            right: 100px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .signal-waves.active {
+            opacity: 1;
+        }
+        
+        .wave {
+            width: 8px;
+            height: 20px;
+            background: #22c55e;
+            border-radius: 4px;
+            opacity: 0.3;
+        }
+        
+        .wave:nth-child(1) { height: 12px; opacity: 0.9; }
+        .wave:nth-child(2) { height: 18px; opacity: 0.7; }
+        .wave:nth-child(3) { height: 24px; opacity: 0.5; }
+        .wave:nth-child(4) { height: 30px; opacity: 0.3; }
+        
+        /* Center Panel - Logic */
+        .logic-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        /* Input Controls */
+        .controls-section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+        }
+        
+        .controls-row {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .control-label {
+            font-size: 15px;
+            color: #a8b4c4;
+            font-weight: 500;
+        }
+        
+        /* Toggle switch style */
+        .toggle-switch {
+            width: 80px;
+            height: 44px;
+            background: #1a2030;
+            border-radius: 22px;
+            border: 3px solid #3a4050;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        
+        .toggle-knob {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #4a5060 0%, #3a4050 100%);
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .toggle-switch.active .toggle-knob {
+            left: calc(100% - 35px);
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+        }
+        
+        .control-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .control-value.on {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .control-value.off {
+            background: rgba(107, 114, 128, 0.2);
+            color: #6a7080;
+        }
+        
+        /* Gear selector control */
+        .gear-control {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .gear-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: 2px solid #3a4050;
+            background: #1a2030;
+            color: #6a7080;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .gear-btn:hover {
+            border-color: #5a6070;
+            color: #a8b4c4;
+        }
+        
+        .gear-btn.selected {
+            color: white;
+        }
+        
+        .gear-btn.selected.P {
+            background: #22c55e;
+            border-color: #4ade80;
+        }
+        
+        .gear-btn.selected.R {
+            background: #f97316;
+            border-color: #fb923c;
+        }
+        
+        .gear-btn.selected.N {
+            background: #eab308;
+            border-color: #facc15;
+        }
+        
+        .gear-btn.selected.D {
+            background: #3b82f6;
+            border-color: #60a5fa;
+        }
+        
+        /* Equations Section */
+        .equations-section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            flex: 1;
+        }
+        
+        .equation-main {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 16px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .equation-main.active {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.05);
+        }
+        
+        .equation-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .equation-label {
+            font-size: 16px;
+            color: #8892a0;
+            width: 100px;
+        }
+        
+        .equation-formula {
+            font-family: 'Courier New', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .equation-formula .var {
+            transition: color 0.3s ease;
+        }
+        
+        .equation-formula .var.active {
+            color: #22c55e;
+        }
+        
+        .equation-formula .var.inactive {
+            color: #6a7080;
+        }
+        
+        .equation-formula .op {
+            color: #a8b4c4;
+        }
+        
+        .equation-formula .paren {
+            color: #60a5fa;
+        }
+        
+        .equation-values {
+            font-family: 'Courier New', monospace;
+            font-size: 22px;
+            color: #8892a0;
+        }
+        
+        .equation-expanded {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .expanded-label {
+            font-size: 14px;
+            color: #6a7080;
+            margin-bottom: 12px;
+        }
+        
+        .expanded-formula {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            color: #a8b4c4;
+        }
+        
+        .result-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .equation-result {
+            font-size: 20px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        
+        .equation-result.true {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .equation-result.false {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .result-message {
+            font-size: 16px;
+            color: #a8b4c4;
+        }
+        
+        /* Right Panel - Truth Table */
+        .truth-panel {
+            width: 400px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .truth-table {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 16px;
+        }
+        
+        .truth-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.2fr;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .truth-header-cell {
+            background: rgba(255,255,255,0.08);
+            padding: 10px 6px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 14px;
+            border-radius: 6px;
+        }
+        
+        .truth-header-cell.input {
+            color: #60a5fa;
+        }
+        
+        .truth-header-cell.output {
+            color: #22c55e;
+        }
+        
+        .truth-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .truth-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.2fr;
+            gap: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .truth-row.active {
+            transform: scale(1.02);
+        }
+        
+        .truth-cell {
+            padding: 10px 6px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .truth-row.active .truth-cell {
+            background: rgba(34, 197, 94, 0.15);
+        }
+        
+        .truth-cell.one {
+            color: #22c55e;
+        }
+        
+        .truth-cell.zero {
+            color: #6a7080;
+        }
+        
+        .truth-cell.gear {
+            font-size: 14px;
+        }
+        
+        /* Legend */
+        .legend {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .legend-title {
+            font-size: 13px;
+            color: #6a7080;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #a8b4c4;
+        }
+        
+        .legend-symbol {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            width: 24px;
+            color: #60a5fa;
+        }
+        
+        /* Instructions */
+        .instructions {
+            text-align: center;
+            font-size: 14px;
+            color: #6a7080;
+            margin-top: auto;
+            padding-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <div class="header">
+                <h1>Boolean Logic: Car Engine Start Interlock</h1>
+                <div class="subtitle">Safety system requiring multiple conditions before engine start is permitted</div>
+            </div>
+            
+            <div class="main-content">
+                <!-- Left Panel - Car Interior -->
+                <div class="car-panel">
+                    <div class="panel-title">Vehicle Interior</div>
+                    <div class="car-scene">
+                        <!-- Dashboard -->
+                        <div class="dashboard">
+                            <div class="start-button-container">
+                                <div class="start-button" id="startButton">
+                                    <span class="start-icon">⏻</span>
+                                    <span class="start-text">START</span>
+                                </div>
+                                <span class="start-label">Engine Start</span>
+                            </div>
+                            
+                            <div class="dash-indicator">
+                                <div class="indicator-display not-ready" id="dashDisplay">NOT READY</div>
+                                <span class="indicator-label">System Status</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Key fob area -->
+                        <div class="fob-area">
+                            <div class="key-fob" id="keyFob">
+                                <div class="fob-ring"></div>
+                                <div class="fob-button"></div>
+                                <div class="fob-button"></div>
+                                <div class="fob-led" id="fobLed"></div>
+                            </div>
+                            <span class="fob-label">Key Fob</span>
+                            <span class="fob-value not-detected" id="fobValue">K = 0</span>
+                        </div>
+                        
+                        <div class="signal-waves" id="signalWaves">
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                            <div class="wave"></div>
+                        </div>
+                        
+                        <!-- Center console -->
+                        <div class="center-console">
+                            <div class="brake-area">
+                                <div class="brake-pedal" id="brakePedal">
+                                    <div class="brake-surface"></div>
+                                </div>
+                                <span class="brake-label">Brake Pedal</span>
+                                <span class="brake-value" id="brakeValue">B = 0</span>
+                            </div>
+                            
+                            <div class="gear-area">
+                                <div class="gear-selector">
+                                    <div class="gear-option park selected" id="gearP" data-gear="P">P</div>
+                                    <div class="gear-option reverse" id="gearR" data-gear="R">R</div>
+                                    <div class="gear-option neutral" id="gearN" data-gear="N">N</div>
+                                    <div class="gear-option drive" id="gearD" data-gear="D">D</div>
+                                </div>
+                                <span class="gear-label">Gear Select</span>
+                                <span class="gear-value valid" id="gearValue">P + N = 1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center Panel - Logic -->
+                <div class="logic-panel">
+                    <div class="controls-section">
+                        <div class="panel-title">Input Controls</div>
+                        <div class="controls-row">
+                            <div class="control-group">
+                                <div class="control-label">Key Fob (K)</div>
+                                <div class="toggle-switch" id="toggleK">
+                                    <div class="toggle-knob">🔑</div>
+                                </div>
+                                <div class="control-value off" id="controlK">NOT DETECTED</div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <div class="control-label">Brake Pedal (B)</div>
+                                <div class="toggle-switch" id="toggleB">
+                                    <div class="toggle-knob">🦶</div>
+                                </div>
+                                <div class="control-value off" id="controlB">RELEASED</div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <div class="control-label">Gear Position</div>
+                                <div class="gear-control">
+                                    <button class="gear-btn P selected" id="btnP">P</button>
+                                    <button class="gear-btn R" id="btnR">R</button>
+                                    <button class="gear-btn N" id="btnN">N</button>
+                                    <button class="gear-btn D" id="btnD">D</button>
+                                </div>
+                                <div class="control-value on" id="controlGear">PARK (Valid)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="equations-section">
+                        <div class="panel-title">Boolean Function</div>
+                        <div class="equation-main" id="equationMain">
+                            <div class="equation-row">
+                                <span class="equation-label">Function:</span>
+                                <span class="equation-formula">
+                                    Start <span class="op">=</span> 
+                                    <span class="var" id="kVar">K</span> 
+                                    <span class="op">·</span> 
+                                    <span class="var" id="bVar">B</span> 
+                                    <span class="op">·</span> 
+                                    <span class="paren">(</span><span class="var" id="pVar">P</span> 
+                                    <span class="op">+</span> 
+                                    <span class="var" id="nVar">N</span><span class="paren">)</span>
+                                </span>
+                            </div>
+                            
+                            <div class="equation-row">
+                                <span class="equation-label">Values:</span>
+                                <span class="equation-values" id="equationValues">
+                                    Start = 0 · 0 · (1 + 0)
+                                </span>
+                            </div>
+                            
+                            <div class="equation-expanded">
+                                <div class="expanded-label">Sum of Products (SOP) Expansion:</div>
+                                <div class="expanded-formula">Start = K·B·P + K·B·N</div>
+                            </div>
+                            
+                            <div class="result-row">
+                                <div class="equation-result false" id="equationResult">Start = 0</div>
+                                <div class="result-message" id="resultMessage">Engine start not permitted</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instructions">
+                        Click toggles to change inputs • Select gear position with P/R/N/D buttons
+                    </div>
+                </div>
+                
+                <!-- Right Panel - Truth Table -->
+                <div class="truth-panel">
+                    <div class="panel-title">Truth Table</div>
+                    <div class="truth-table">
+                        <div class="truth-header">
+                            <div class="truth-header-cell input">K</div>
+                            <div class="truth-header-cell input">B</div>
+                            <div class="truth-header-cell input">Gear</div>
+                            <div class="truth-header-cell output">Start</div>
+                        </div>
+                        <div class="truth-rows" id="truthRows">
+                            <!-- Generated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="legend">
+                        <div class="legend-title">Variable Key</div>
+                        <div class="legend-items">
+                            <div class="legend-item">
+                                <span class="legend-symbol">K</span>
+                                <span>Key fob detected (1 = yes)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">B</span>
+                                <span>Brake pressed (1 = yes)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">P</span>
+                                <span>Park selected (1 = yes)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">N</span>
+                                <span>Neutral selected (1 = yes)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Responsive scaling
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+        
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+        
+        // State
+        let K = 0;  // Key fob
+        let B = 0;  // Brake
+        let gear = 'P';  // Current gear
+        
+        // DOM Elements
+        const toggleK = document.getElementById('toggleK');
+        const toggleB = document.getElementById('toggleB');
+        const keyFob = document.getElementById('keyFob');
+        const brakePedal = document.getElementById('brakePedal');
+        const startButton = document.getElementById('startButton');
+        const dashDisplay = document.getElementById('dashDisplay');
+        const signalWaves = document.getElementById('signalWaves');
+        
+        // Gear buttons
+        const gearBtns = {
+            P: document.getElementById('btnP'),
+            R: document.getElementById('btnR'),
+            N: document.getElementById('btnN'),
+            D: document.getElementById('btnD')
+        };
+        
+        const gearOptions = {
+            P: document.getElementById('gearP'),
+            R: document.getElementById('gearR'),
+            N: document.getElementById('gearN'),
+            D: document.getElementById('gearD')
+        };
+        
+        // Truth table data - simplified with gear column
+        const truthTableData = [
+            { K: 0, B: 0, gear: 'P' },
+            { K: 0, B: 0, gear: 'R/D' },
+            { K: 0, B: 1, gear: 'P' },
+            { K: 0, B: 1, gear: 'R/D' },
+            { K: 1, B: 0, gear: 'P' },
+            { K: 1, B: 0, gear: 'R/D' },
+            { K: 1, B: 1, gear: 'P/N' },
+            { K: 1, B: 1, gear: 'R/D' },
+        ];
+        
+        function generateTruthTable() {
+            const container = document.getElementById('truthRows');
+            container.innerHTML = '';
+            
+            truthTableData.forEach((row, index) => {
+                const gearValid = row.gear === 'P' || row.gear === 'P/N';
+                const start = row.K & row.B & (gearValid ? 1 : 0);
+                
+                const rowEl = document.createElement('div');
+                rowEl.className = 'truth-row';
+                rowEl.dataset.index = index;
+                
+                rowEl.innerHTML = `
+                    <div class="truth-cell ${row.K ? 'one' : 'zero'}">${row.K}</div>
+                    <div class="truth-cell ${row.B ? 'one' : 'zero'}">${row.B}</div>
+                    <div class="truth-cell gear ${gearValid ? 'one' : 'zero'}">${row.gear}</div>
+                    <div class="truth-cell ${start ? 'one' : 'zero'}">${start}</div>
+                `;
+                
+                container.appendChild(rowEl);
+            });
+        }
+        
+        function getGearValues() {
+            return {
+                P: gear === 'P' ? 1 : 0,
+                N: gear === 'N' ? 1 : 0
+            };
+        }
+        
+        function updateDisplay() {
+            const gv = getGearValues();
+            const gearValid = gv.P | gv.N;
+            const start = K & B & gearValid;
+            
+            // Update toggle switches
+            toggleK.classList.toggle('active', K === 1);
+            toggleB.classList.toggle('active', B === 1);
+            
+            document.getElementById('controlK').textContent = K ? 'DETECTED' : 'NOT DETECTED';
+            document.getElementById('controlK').className = 'control-value ' + (K ? 'on' : 'off');
+            
+            document.getElementById('controlB').textContent = B ? 'PRESSED' : 'RELEASED';
+            document.getElementById('controlB').className = 'control-value ' + (B ? 'on' : 'off');
+            
+            // Update gear buttons
+            Object.keys(gearBtns).forEach(g => {
+                gearBtns[g].classList.toggle('selected', gear === g);
+            });
+            
+            const gearNames = { P: 'PARK', R: 'REVERSE', N: 'NEUTRAL', D: 'DRIVE' };
+            document.getElementById('controlGear').textContent = gearNames[gear] + (gearValid ? ' (Valid)' : ' (Invalid)');
+            document.getElementById('controlGear').className = 'control-value ' + (gearValid ? 'on' : 'off');
+            
+            // Update car visualization
+            keyFob.classList.toggle('detected', K === 1);
+            signalWaves.classList.toggle('active', K === 1);
+            document.getElementById('fobValue').textContent = `K = ${K}`;
+            document.getElementById('fobValue').className = 'fob-value ' + (K ? 'detected' : 'not-detected');
+            
+            brakePedal.classList.toggle('pressed', B === 1);
+            document.getElementById('brakeValue').textContent = `B = ${B}`;
+            document.getElementById('brakeValue').className = 'brake-value ' + (B ? 'active' : '');
+            
+            // Update gear selector visualization
+            Object.keys(gearOptions).forEach(g => {
+                gearOptions[g].classList.toggle('selected', gear === g);
+            });
+            
+            document.getElementById('gearValue').textContent = `P + N = ${gearValid}`;
+            document.getElementById('gearValue').className = 'gear-value ' + (gearValid ? 'valid' : 'invalid');
+            
+            // Update start button and dashboard
+            startButton.classList.remove('ready', 'active');
+            if (start) {
+                startButton.classList.add('active');
+                dashDisplay.textContent = 'READY';
+                dashDisplay.className = 'indicator-display ready';
+            } else if (K && B) {
+                dashDisplay.textContent = 'CHECK GEAR';
+                dashDisplay.className = 'indicator-display not-ready';
+            } else if (K) {
+                startButton.classList.add('ready');
+                dashDisplay.textContent = 'PRESS BRAKE';
+                dashDisplay.className = 'indicator-display not-ready';
+            } else {
+                dashDisplay.textContent = 'NO KEY';
+                dashDisplay.className = 'indicator-display not-ready';
+            }
+            
+            // Update equation display
+            const kVar = document.getElementById('kVar');
+            const bVar = document.getElementById('bVar');
+            const pVar = document.getElementById('pVar');
+            const nVar = document.getElementById('nVar');
+            
+            kVar.className = 'var ' + (K ? 'active' : 'inactive');
+            bVar.className = 'var ' + (B ? 'active' : 'inactive');
+            pVar.className = 'var ' + (gv.P ? 'active' : 'inactive');
+            nVar.className = 'var ' + (gv.N ? 'active' : 'inactive');
+            
+            document.getElementById('equationValues').textContent = 
+                `Start = ${K} · ${B} · (${gv.P} + ${gv.N}) = ${K} · ${B} · ${gearValid} = ${start}`;
+            
+            document.getElementById('equationMain').classList.toggle('active', start === 1);
+            
+            const equationResult = document.getElementById('equationResult');
+            equationResult.textContent = `Start = ${start}`;
+            equationResult.className = 'equation-result ' + (start ? 'true' : 'false');
+            
+            const resultMessage = document.getElementById('resultMessage');
+            if (start) {
+                resultMessage.textContent = '✓ Engine start permitted';
+            } else if (!K) {
+                resultMessage.textContent = '✗ Key fob not detected';
+            } else if (!B) {
+                resultMessage.textContent = '✗ Brake pedal not pressed';
+            } else {
+                resultMessage.textContent = '✗ Gear must be in Park or Neutral';
+            }
+            
+            // Highlight active truth table row
+            const currentGearType = (gear === 'P' || gear === 'N') ? 'P/N' : 'R/D';
+            let matchIndex = -1;
+            
+            if (K === 1 && B === 1 && (gear === 'P' || gear === 'N')) {
+                matchIndex = 6;
+            } else if (K === 1 && B === 1) {
+                matchIndex = 7;
+            } else if (K === 1 && B === 0 && (gear === 'P' || gear === 'N')) {
+                matchIndex = 4;
+            } else if (K === 1 && B === 0) {
+                matchIndex = 5;
+            } else if (K === 0 && B === 1 && (gear === 'P' || gear === 'N')) {
+                matchIndex = 2;
+            } else if (K === 0 && B === 1) {
+                matchIndex = 3;
+            } else if (K === 0 && B === 0 && (gear === 'P' || gear === 'N')) {
+                matchIndex = 0;
+            } else {
+                matchIndex = 1;
+            }
+            
+            document.querySelectorAll('.truth-row').forEach((row, index) => {
+                row.classList.toggle('active', index === matchIndex);
+            });
+        }
+        
+        // Event handlers
+        toggleK.addEventListener('click', () => {
+            K = K ? 0 : 1;
+            updateDisplay();
+        });
+        
+        toggleB.addEventListener('click', () => {
+            B = B ? 0 : 1;
+            updateDisplay();
+        });
+        
+        Object.keys(gearBtns).forEach(g => {
+            gearBtns[g].addEventListener('click', () => {
+                gear = g;
+                updateDisplay();
+            });
+        });
+        
+        Object.keys(gearOptions).forEach(g => {
+            gearOptions[g].addEventListener('click', () => {
+                gear = g;
+                updateDisplay();
+            });
+        });
+        
+        // Initialize
+        generateTruthTable();
+        updateDisplay();
+    </script>
+</body>
+</html>

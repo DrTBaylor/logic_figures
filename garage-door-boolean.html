@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boolean Logic: Garage Door Control System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%);
+            color: #e8e8e8;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 38px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            color: #8892a0;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 40px;
+            flex: 1;
+        }
+        
+        /* Left Panel - Physical Representation */
+        .physical-panel {
+            width: 500px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #a8b4c4;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .garage-scene {
+            flex: 1;
+            background: linear-gradient(180deg, #1e2530 0%, #141820 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Garage structure */
+        .garage-frame {
+            position: absolute;
+            top: 20px;
+            left: 50px;
+            right: 50px;
+            bottom: 60px;
+            border: 8px solid #3a4050;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .garage-floor {
+            position: absolute;
+            bottom: 60px;
+            left: 40px;
+            right: 40px;
+            height: 12px;
+            background: #4a5060;
+        }
+        
+        /* Garage door */
+        .garage-door {
+            position: absolute;
+            left: 58px;
+            right: 58px;
+            height: 200px;
+            background: linear-gradient(180deg, #5a6070 0%, #4a5060 100%);
+            transition: top 0.8s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 8px;
+        }
+        
+        .garage-door.up {
+            top: 28px;
+        }
+        
+        .garage-door.down {
+            top: 178px;
+        }
+        
+        .door-panel {
+            flex: 1;
+            background: linear-gradient(180deg, #6a7080 0%, #5a6070 100%);
+            border-radius: 3px;
+        }
+        
+        /* Safety sensor beam */
+        .safety-beam {
+            position: absolute;
+            bottom: 90px;
+            left: 60px;
+            right: 60px;
+            height: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .safety-beam.clear {
+            background: #22c55e;
+            box-shadow: 0 0 15px #22c55e;
+        }
+        
+        .safety-beam.blocked {
+            background: #ef4444;
+            box-shadow: 0 0 15px #ef4444;
+        }
+        
+        .sensor-unit {
+            position: absolute;
+            bottom: 82px;
+            width: 16px;
+            height: 20px;
+            background: #3a4050;
+            border-radius: 3px;
+        }
+        
+        .sensor-unit.left { left: 52px; }
+        .sensor-unit.right { right: 52px; }
+        
+        .sensor-led {
+            position: absolute;
+            top: 5px;
+            left: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .sensor-led.clear {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+        
+        .sensor-led.blocked {
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+        
+        /* Obstruction */
+        .obstruction {
+            position: absolute;
+            bottom: 72px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 8px 8px 0 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .obstruction.visible {
+            opacity: 1;
+        }
+        
+        .obstruction-icon {
+            font-size: 32px;
+        }
+        
+        /* Motor indicator */
+        .motor-housing {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 40px;
+            background: #2a3040;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .motor-led {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        .motor-led.up-led {
+            background: #1a1f2e;
+            border: 2px solid #3b82f6;
+        }
+        
+        .motor-led.up-led.active {
+            background: #3b82f6;
+            box-shadow: 0 0 15px #3b82f6;
+            color: white;
+        }
+        
+        .motor-led.down-led {
+            background: #1a1f2e;
+            border: 2px solid #f97316;
+        }
+        
+        .motor-led.down-led.active {
+            background: #f97316;
+            box-shadow: 0 0 15px #f97316;
+            color: white;
+        }
+        
+        .motor-label {
+            position: absolute;
+            top: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 13px;
+            color: #8892a0;
+            white-space: nowrap;
+        }
+        
+        /* Scene labels */
+        .scene-label {
+            position: absolute;
+            font-size: 13px;
+            color: #8892a0;
+        }
+        
+        .label-safety {
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Center Panel - Interactive Controls & Logic */
+        .logic-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        /* Input Controls */
+        .controls-section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+        }
+        
+        .controls-row {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .control-label {
+            font-size: 15px;
+            color: #a8b4c4;
+            font-weight: 500;
+        }
+        
+        .button-control {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 4px solid #3a4050;
+            background: linear-gradient(180deg, #2a3040 0%, #1a2030 100%);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        
+        .button-control:hover {
+            border-color: #4a5060;
+        }
+        
+        .button-control.pressed {
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            border-color: #60a5fa;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .button-control.down-btn.pressed {
+            background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+            border-color: #fb923c;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
+        }
+        
+        .button-icon {
+            font-size: 28px;
+            margin-bottom: 4px;
+        }
+        
+        .button-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #a8b4c4;
+        }
+        
+        .button-control.pressed .button-text {
+            color: white;
+        }
+        
+        /* Safety Switch */
+        .safety-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .switch-container {
+            width: 140px;
+            height: 50px;
+            background: #1a2030;
+            border-radius: 25px;
+            border: 3px solid #3a4050;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .switch-container.clear {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        
+        .switch-container.blocked {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .switch-knob {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #4a5060 0%, #3a4050 100%);
+            position: absolute;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .switch-container.clear .switch-knob {
+            left: calc(100% - 42px);
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+        }
+        
+        .switch-container.blocked .switch-knob {
+            left: 6px;
+            background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .switch-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .switch-labels span {
+            color: #6a7080;
+            transition: color 0.3s ease;
+        }
+        
+        .switch-container.blocked .switch-labels .blocked-label {
+            color: #ef4444;
+        }
+        
+        .switch-container.clear .switch-labels .clear-label {
+            color: #22c55e;
+        }
+        
+        .safety-value {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .safety-value.clear {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .safety-value.blocked {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        /* Boolean Equations Section */
+        .equations-section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            flex: 1;
+        }
+        
+        .equations-container {
+            display: flex;
+            gap: 40px;
+            margin-top: 16px;
+        }
+        
+        .equation-box {
+            flex: 1;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .equation-box.up-active {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .equation-box.down-active {
+            border-color: #f97316;
+            background: rgba(249, 115, 22, 0.1);
+        }
+        
+        .equation-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .equation-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .equation-box.up-active .equation-indicator {
+            background: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6;
+        }
+        
+        .equation-box.down-active .equation-indicator {
+            background: #f97316;
+            box-shadow: 0 0 10px #f97316;
+        }
+        
+        .equation-indicator:not(.active) {
+            background: #3a4050;
+        }
+        
+        .equation-formula {
+            font-family: 'Courier New', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+        
+        .equation-formula .var {
+            transition: color 0.3s ease;
+        }
+        
+        .equation-formula .var.active {
+            color: #22c55e;
+        }
+        
+        .equation-formula .var.inactive {
+            color: #6a7080;
+        }
+        
+        .equation-formula .op {
+            color: #a8b4c4;
+        }
+        
+        .equation-values {
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            color: #8892a0;
+            margin-bottom: 12px;
+        }
+        
+        .equation-result {
+            font-size: 18px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        
+        .equation-result.true {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        
+        .equation-result.false {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .equation-description {
+            font-size: 14px;
+            color: #6a7080;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+        
+        /* Right Panel - Truth Table */
+        .truth-panel {
+            width: 420px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .truth-table {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: 16px;
+        }
+        
+        .truth-header {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .truth-header-cell {
+            background: rgba(255,255,255,0.08);
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 15px;
+            border-radius: 8px;
+        }
+        
+        .truth-header-cell.input {
+            color: #60a5fa;
+        }
+        
+        .truth-header-cell.output {
+            color: #f97316;
+        }
+        
+        .truth-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .truth-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .truth-row.active {
+            transform: scale(1.02);
+        }
+        
+        .truth-cell {
+            padding: 14px 8px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .truth-row.active .truth-cell {
+            background: rgba(59, 130, 246, 0.2);
+        }
+        
+        .truth-cell.one {
+            color: #22c55e;
+        }
+        
+        .truth-cell.zero {
+            color: #6a7080;
+        }
+        
+        /* Legend */
+        .legend {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .legend-title {
+            font-size: 13px;
+            color: #6a7080;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #a8b4c4;
+        }
+        
+        .legend-symbol {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            width: 30px;
+            color: #60a5fa;
+        }
+        
+        /* Instructions */
+        .instructions {
+            text-align: center;
+            font-size: 14px;
+            color: #6a7080;
+            margin-top: auto;
+            padding-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <div class="header">
+                <h1>Boolean Logic: Garage Door Control System</h1>
+                <div class="subtitle">Interactive demonstration of control logic with safety interlock</div>
+            </div>
+            
+            <div class="main-content">
+                <!-- Left Panel - Physical Representation -->
+                <div class="physical-panel">
+                    <div class="panel-title">Physical System</div>
+                    <div class="garage-scene">
+                        <div class="garage-frame"></div>
+                        <div class="garage-floor"></div>
+                        
+                        <div class="garage-door down" id="garageDoor">
+                            <div class="door-panel"></div>
+                            <div class="door-panel"></div>
+                            <div class="door-panel"></div>
+                            <div class="door-panel"></div>
+                        </div>
+                        
+                        <div class="motor-housing">
+                            <div class="motor-led up-led" id="motorUpLed">▲</div>
+                            <div class="motor-led down-led" id="motorDownLed">▼</div>
+                        </div>
+                        <div class="motor-label">MOTOR UNIT</div>
+                        
+                        <div class="safety-beam clear" id="safetyBeam"></div>
+                        <div class="sensor-unit left">
+                            <div class="sensor-led clear" id="sensorLeft"></div>
+                        </div>
+                        <div class="sensor-unit right">
+                            <div class="sensor-led clear" id="sensorRight"></div>
+                        </div>
+                        
+                        <div class="obstruction" id="obstruction">
+                            <span class="obstruction-icon">📦</span>
+                        </div>
+                        
+                        <div class="scene-label label-safety">Safety Sensor Beam</div>
+                    </div>
+                </div>
+                
+                <!-- Center Panel - Logic -->
+                <div class="logic-panel">
+                    <div class="controls-section">
+                        <div class="panel-title">Input Controls</div>
+                        <div class="controls-row">
+                            <div class="control-group">
+                                <div class="control-label">UP Button (U)</div>
+                                <div class="button-control up-btn" id="upButton">
+                                    <span class="button-icon">▲</span>
+                                    <span class="button-text">PRESS</span>
+                                </div>
+                            </div>
+                            
+                            <div class="control-group">
+                                <div class="control-label">DOWN Button (D)</div>
+                                <div class="button-control down-btn" id="downButton">
+                                    <span class="button-icon">▼</span>
+                                    <span class="button-text">PRESS</span>
+                                </div>
+                            </div>
+                            
+                            <div class="safety-control">
+                                <div class="control-label">Safety Switch (S)</div>
+                                <div class="switch-container clear" id="safetySwitch">
+                                    <div class="switch-labels">
+                                        <span class="blocked-label">S=0</span>
+                                        <span class="clear-label">S=1</span>
+                                    </div>
+                                    <div class="switch-knob" id="switchKnob">✓</div>
+                                </div>
+                                <div class="safety-value clear" id="safetyValueDisplay">PATH CLEAR</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="equations-section">
+                        <div class="panel-title">Boolean Functions</div>
+                        <div class="equations-container">
+                            <div class="equation-box" id="upEquationBox">
+                                <div class="equation-title">
+                                    <div class="equation-indicator" id="upIndicator"></div>
+                                    Motor UP Output
+                                </div>
+                                <div class="equation-formula">
+                                    M<sub>up</sub> <span class="op">=</span> <span class="var" id="uVar">U</span>
+                                </div>
+                                <div class="equation-values" id="upValues">
+                                    M<sub>up</sub> = <span id="uValue">0</span>
+                                </div>
+                                <div class="equation-result false" id="upResult">M<sub>up</sub> = 0</div>
+                                <div class="equation-description">
+                                    Motor moves UP when the UP button is pressed. No safety check needed for upward motion.
+                                </div>
+                            </div>
+                            
+                            <div class="equation-box" id="downEquationBox">
+                                <div class="equation-title">
+                                    <div class="equation-indicator" id="downIndicator"></div>
+                                    Motor DOWN Output
+                                </div>
+                                <div class="equation-formula">
+                                    M<sub>down</sub> <span class="op">=</span> <span class="var" id="dVar">D</span> <span class="op">·</span> <span class="var" id="sVar">S</span>
+                                </div>
+                                <div class="equation-values" id="downValues">
+                                    M<sub>down</sub> = <span id="dValue">0</span> · <span id="sValue">1</span>
+                                </div>
+                                <div class="equation-result false" id="downResult">M<sub>down</sub> = 0</div>
+                                <div class="equation-description">
+                                    Motor moves DOWN only when DOWN button is pressed AND safety sensor detects clear path (S=1).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="instructions">
+                        Click the UP/DOWN buttons to toggle • Click the safety switch to toggle obstruction
+                    </div>
+                </div>
+                
+                <!-- Right Panel - Truth Table -->
+                <div class="truth-panel">
+                    <div class="panel-title">Truth Table</div>
+                    <div class="truth-table">
+                        <div class="truth-header">
+                            <div class="truth-header-cell input">U</div>
+                            <div class="truth-header-cell input">D</div>
+                            <div class="truth-header-cell input">S</div>
+                            <div class="truth-header-cell output">M<sub>up</sub></div>
+                            <div class="truth-header-cell output">M<sub>down</sub></div>
+                        </div>
+                        <div class="truth-rows" id="truthRows">
+                            <!-- Generated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="legend">
+                        <div class="legend-title">Variable Key</div>
+                        <div class="legend-items">
+                            <div class="legend-item">
+                                <span class="legend-symbol">U</span>
+                                <span>UP button (1 = pressed)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">D</span>
+                                <span>DOWN button (1 = pressed)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">S</span>
+                                <span>Safety (1 = clear, 0 = blocked)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">M<sub>up</sub></span>
+                                <span>Motor UP output</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-symbol">M<sub>down</sub></span>
+                                <span>Motor DOWN output</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Responsive scaling
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+        
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+        
+        // State
+        let U = 0;  // UP button
+        let D = 0;  // DOWN button
+        let S = 1;  // Safety (1 = clear, 0 = blocked)
+        
+        // DOM Elements
+        const upButton = document.getElementById('upButton');
+        const downButton = document.getElementById('downButton');
+        const safetySwitch = document.getElementById('safetySwitch');
+        const switchKnob = document.getElementById('switchKnob');
+        const safetyValueDisplay = document.getElementById('safetyValueDisplay');
+        const garageDoor = document.getElementById('garageDoor');
+        const safetyBeam = document.getElementById('safetyBeam');
+        const sensorLeft = document.getElementById('sensorLeft');
+        const sensorRight = document.getElementById('sensorRight');
+        const obstruction = document.getElementById('obstruction');
+        const motorUpLed = document.getElementById('motorUpLed');
+        const motorDownLed = document.getElementById('motorDownLed');
+        
+        // Truth table data
+        const truthTableData = [
+            { U: 0, D: 0, S: 0 },
+            { U: 0, D: 0, S: 1 },
+            { U: 0, D: 1, S: 0 },
+            { U: 0, D: 1, S: 1 },
+            { U: 1, D: 0, S: 0 },
+            { U: 1, D: 0, S: 1 },
+            { U: 1, D: 1, S: 0 },
+            { U: 1, D: 1, S: 1 },
+        ];
+        
+        // Generate truth table
+        function generateTruthTable() {
+            const container = document.getElementById('truthRows');
+            container.innerHTML = '';
+            
+            truthTableData.forEach((row, index) => {
+                const Mup = row.U;
+                const Mdown = row.D & row.S;
+                
+                const rowEl = document.createElement('div');
+                rowEl.className = 'truth-row';
+                rowEl.dataset.index = index;
+                
+                rowEl.innerHTML = `
+                    <div class="truth-cell ${row.U ? 'one' : 'zero'}">${row.U}</div>
+                    <div class="truth-cell ${row.D ? 'one' : 'zero'}">${row.D}</div>
+                    <div class="truth-cell ${row.S ? 'one' : 'zero'}">${row.S}</div>
+                    <div class="truth-cell ${Mup ? 'one' : 'zero'}">${Mup}</div>
+                    <div class="truth-cell ${Mdown ? 'one' : 'zero'}">${Mdown}</div>
+                `;
+                
+                container.appendChild(rowEl);
+            });
+        }
+        
+        // Update display
+        function updateDisplay() {
+            // Calculate outputs
+            const Mup = U;
+            const Mdown = D & S;
+            
+            // Update buttons
+            upButton.classList.toggle('pressed', U === 1);
+            downButton.classList.toggle('pressed', D === 1);
+            upButton.querySelector('.button-text').textContent = U ? 'ON' : 'PRESS';
+            downButton.querySelector('.button-text').textContent = D ? 'ON' : 'PRESS';
+            
+            // Update safety switch
+            safetySwitch.className = 'switch-container ' + (S ? 'clear' : 'blocked');
+            switchKnob.textContent = S ? '✓' : '✗';
+            safetyValueDisplay.className = 'safety-value ' + (S ? 'clear' : 'blocked');
+            safetyValueDisplay.textContent = S ? 'PATH CLEAR' : 'OBSTRUCTED';
+            
+            // Update garage scene
+            safetyBeam.className = 'safety-beam ' + (S ? 'clear' : 'blocked');
+            sensorLeft.className = 'sensor-led ' + (S ? 'clear' : 'blocked');
+            sensorRight.className = 'sensor-led ' + (S ? 'clear' : 'blocked');
+            obstruction.classList.toggle('visible', S === 0);
+            
+            // Update motor LEDs
+            motorUpLed.classList.toggle('active', Mup === 1);
+            motorDownLed.classList.toggle('active', Mdown === 1);
+            
+            // Update door position based on motor state
+            if (Mup) {
+                garageDoor.classList.remove('down');
+                garageDoor.classList.add('up');
+            } else if (Mdown) {
+                garageDoor.classList.remove('up');
+                garageDoor.classList.add('down');
+            }
+            
+            // Update equation displays
+            const uVar = document.getElementById('uVar');
+            const dVar = document.getElementById('dVar');
+            const sVar = document.getElementById('sVar');
+            
+            uVar.className = 'var ' + (U ? 'active' : 'inactive');
+            dVar.className = 'var ' + (D ? 'active' : 'inactive');
+            sVar.className = 'var ' + (S ? 'active' : 'inactive');
+            
+            document.getElementById('uValue').textContent = U;
+            document.getElementById('dValue').textContent = D;
+            document.getElementById('sValue').textContent = S;
+            
+            const upEquationBox = document.getElementById('upEquationBox');
+            const downEquationBox = document.getElementById('downEquationBox');
+            
+            upEquationBox.className = 'equation-box' + (Mup ? ' up-active' : '');
+            downEquationBox.className = 'equation-box' + (Mdown ? ' down-active' : '');
+            
+            const upResult = document.getElementById('upResult');
+            const downResult = document.getElementById('downResult');
+            
+            upResult.className = 'equation-result ' + (Mup ? 'true' : 'false');
+            upResult.innerHTML = `M<sub>up</sub> = ${Mup}`;
+            
+            downResult.className = 'equation-result ' + (Mdown ? 'true' : 'false');
+            downResult.innerHTML = `M<sub>down</sub> = ${Mdown}`;
+            
+            // Highlight active truth table row
+            const currentIndex = truthTableData.findIndex(row => 
+                row.U === U && row.D === D && row.S === S
+            );
+            
+            document.querySelectorAll('.truth-row').forEach((row, index) => {
+                row.classList.toggle('active', index === currentIndex);
+            });
+        }
+        
+        // Event handlers
+        upButton.addEventListener('click', () => {
+            U = U ? 0 : 1;
+            if (U) D = 0; // Can't press both
+            updateDisplay();
+        });
+        
+        downButton.addEventListener('click', () => {
+            D = D ? 0 : 1;
+            if (D) U = 0; // Can't press both
+            updateDisplay();
+        });
+        
+        safetySwitch.addEventListener('click', () => {
+            S = S ? 0 : 1;
+            updateDisplay();
+        });
+        
+        // Initialize
+        generateTruthTable();
+        updateDisplay();
+    </script>
+</body>
+</html>

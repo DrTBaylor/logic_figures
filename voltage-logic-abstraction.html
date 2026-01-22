@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Voltage-to-Logic Abstraction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a12;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            padding: 36px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 40px;
+            font-weight: 700;
+            color: #e6edf3;
+            margin-bottom: 6px;
+        }
+
+        .header .subtitle {
+            font-size: 19px;
+            color: #8b949e;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+
+        /* Left Panel - The Abstraction Layers */
+        .abstraction-panel {
+            background: linear-gradient(180deg, rgba(45, 55, 72, 0.6) 0%, rgba(30, 40, 55, 0.8) 100%);
+            border-radius: 16px;
+            border: 1px solid #30363d;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .panel-title .icon {
+            width: 30px;
+            height: 30px;
+            background: rgba(88, 166, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* Abstraction Diagram */
+        .abstraction-diagram {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 6px 0;
+        }
+
+        .abstraction-layer {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 16px 22px;
+            background: rgba(13, 17, 23, 0.7);
+            border-radius: 12px;
+            border: 1px solid #21262d;
+            transition: all 0.3s ease;
+        }
+
+        .abstraction-layer:hover {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+        }
+
+        .layer-label {
+            width: 130px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .layer-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .voltage-value {
+            text-align: center;
+        }
+
+        .voltage-value .value {
+            font-size: 26px;
+            font-weight: 700;
+            font-family: 'Consolas', monospace;
+        }
+
+        .voltage-value .label {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 3px;
+        }
+
+        .voltage-high { color: #f97583; }
+        .voltage-low { color: #79c0ff; }
+
+        .arrow-down {
+            display: flex;
+            justify-content: center;
+            padding: 6px 0;
+        }
+
+        .arrow-down svg {
+            width: 28px;
+            height: 28px;
+            color: #484f58;
+        }
+
+        /* Logic Values */
+        .logic-value {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            font-family: 'Consolas', monospace;
+            transition: all 0.3s ease;
+        }
+
+        .logic-one {
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(46, 160, 67, 0.3);
+        }
+
+        .logic-zero {
+            background: linear-gradient(135deg, #6e7681 0%, #484f58 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(110, 118, 129, 0.3);
+        }
+
+        /* Standard Convention Box */
+        .standard-convention {
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: rgba(35, 134, 54, 0.15);
+            border-radius: 12px;
+            border: 1px solid rgba(46, 160, 67, 0.4);
+        }
+
+        .standard-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .standard-badge {
+            padding: 4px 12px;
+            background: #238636;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .standard-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #7ee787;
+        }
+
+        .standard-description {
+            font-size: 14px;
+            color: #c9d1d9;
+            line-height: 1.5;
+        }
+
+        /* Voltage Variations - Compact */
+        .voltage-variations {
+            margin-top: 14px;
+            padding: 14px 18px;
+            background: rgba(13, 17, 23, 0.7);
+            border-radius: 10px;
+            border: 1px solid #21262d;
+        }
+
+        .voltage-var-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #d2a8ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .voltage-chips {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .voltage-chip {
+            padding: 6px 14px;
+            background: rgba(210, 168, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(210, 168, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .voltage-chip:hover, .voltage-chip.selected {
+            background: rgba(210, 168, 255, 0.2);
+            border-color: #d2a8ff;
+        }
+
+        .voltage-chip .volts {
+            font-size: 14px;
+            font-weight: 600;
+            color: #d2a8ff;
+            font-family: 'Consolas', monospace;
+        }
+
+        .voltage-chip .family {
+            font-size: 11px;
+            color: #8b949e;
+            margin-left: 6px;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Mixed Logic Artifacts Panel */
+        .artifacts-panel {
+            flex: 1;
+            background: linear-gradient(180deg, rgba(56, 50, 45, 0.6) 0%, rgba(45, 40, 35, 0.8) 100%);
+            border-radius: 16px;
+            border: 1px solid #30363d;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .artifacts-panel .panel-title {
+            color: #ffa657;
+            margin-bottom: 6px;
+        }
+
+        .artifacts-panel .panel-title .icon {
+            background: rgba(255, 166, 87, 0.2);
+        }
+
+        .artifacts-subtitle {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        /* Artifact Categories */
+        .artifact-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .artifact-card {
+            background: rgba(13, 17, 23, 0.7);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid #21262d;
+        }
+
+        .artifact-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffa657;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .artifact-card-title .card-icon {
+            font-size: 16px;
+        }
+
+        /* Notation Examples */
+        .notation-examples {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .notation-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notation-symbol {
+            font-family: 'Consolas', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffa657;
+            min-width: 60px;
+        }
+
+        .notation-meaning {
+            font-size: 13px;
+            color: #8b949e;
+        }
+
+        /* Vocabulary */
+        .vocab-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .vocab-item {
+            font-size: 13px;
+            color: #c9d1d9;
+        }
+
+        .vocab-term {
+            color: #ffa657;
+            font-weight: 600;
+        }
+
+        /* Bubble Notation Visual */
+        .bubble-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            padding: 10px 0;
+        }
+
+        .gate-with-bubble {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .gate-label {
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .bubble-meaning {
+            font-size: 12px;
+            color: #ffa657;
+            text-align: center;
+        }
+
+        /* Active-Low Signals */
+        .signal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .signal-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .signal-name {
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #ffa657;
+            min-width: 45px;
+        }
+
+        .signal-desc {
+            font-size: 11px;
+            color: #8b949e;
+        }
+
+        /* De Morgan Note */
+        .demorgan-note {
+            margin-top: auto;
+            padding: 14px 18px;
+            background: rgba(255, 166, 87, 0.1);
+            border-radius: 10px;
+            border-left: 3px solid #ffa657;
+        }
+
+        .demorgan-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffa657;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .demorgan-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .demorgan-equation {
+            font-family: 'Consolas', monospace;
+            font-size: 15px;
+            color: #e6edf3;
+        }
+
+        .demorgan-explain {
+            font-size: 13px;
+            color: #8b949e;
+            flex: 1;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .key-insight {
+            display: inline-block;
+            padding: 12px 26px;
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.15) 0%, rgba(210, 168, 255, 0.15) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(88, 166, 255, 0.3);
+        }
+
+        .key-insight p {
+            font-size: 16px;
+            color: #e6edf3;
+            line-height: 1.5;
+        }
+
+        .key-insight strong {
+            color: #58a6ff;
+        }
+
+        .key-insight em {
+            color: #d2a8ff;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <!-- Header -->
+            <div class="header">
+                <h1>The Voltage-to-Logic Abstraction</h1>
+                <div class="subtitle">How physical voltages become binary digits—and why historical conventions still appear in datasheets</div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                
+                <!-- Left Panel: Abstraction Layers -->
+                <div class="abstraction-panel">
+                    <div class="panel-title">
+                        <div class="icon">⚡</div>
+                        Two Layers of Abstraction
+                    </div>
+
+                    <div class="abstraction-diagram">
+                        <!-- Physical Layer -->
+                        <div class="abstraction-layer">
+                            <div class="layer-label">Physical<br>Voltages</div>
+                            <div class="layer-content">
+                                <div class="voltage-value">
+                                    <div class="value voltage-high" id="highVoltDisplay">5.0V</div>
+                                    <div class="label">High Voltage</div>
+                                </div>
+                                <div class="voltage-value">
+                                    <div class="value voltage-low">0V</div>
+                                    <div class="label">Low Voltage</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="arrow-down">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12l7 7 7-7"/>
+                            </svg>
+                        </div>
+
+                        <!-- Symbolic Layer -->
+                        <div class="abstraction-layer">
+                            <div class="layer-label">Symbolic<br>Meaning</div>
+                            <div class="layer-content">
+                                <div class="voltage-value">
+                                    <div class="value" style="color: #f97583;">HIGH</div>
+                                    <div class="label">or "True"</div>
+                                </div>
+                                <div class="voltage-value">
+                                    <div class="value" style="color: #79c0ff;">LOW</div>
+                                    <div class="label">or "False"</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="arrow-down">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12l7 7 7-7"/>
+                            </svg>
+                        </div>
+
+                        <!-- Binary Layer -->
+                        <div class="abstraction-layer">
+                            <div class="layer-label">Binary<br>Digits</div>
+                            <div class="layer-content">
+                                <div class="logic-value logic-one">1</div>
+                                <div class="logic-value logic-zero">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Standard Convention -->
+                    <div class="standard-convention">
+                        <div class="standard-header">
+                            <span class="standard-badge">Default</span>
+                            <span class="standard-title">Positive Logic (High-True)</span>
+                        </div>
+                        <div class="standard-description">
+                            Modern digital design uses positive logic as the universal default: <strong>High = 1</strong>, <strong>Low = 0</strong>. When reading documentation or writing code, assume positive logic unless explicitly indicated otherwise.
+                        </div>
+                    </div>
+
+                    <!-- Voltage Variations - Compact -->
+                    <div class="voltage-variations">
+                        <div class="voltage-var-header">
+                            <span>📊</span>
+                            "High" Voltage Varies by Technology
+                        </div>
+                        <div class="voltage-chips">
+                            <div class="voltage-chip selected" onclick="selectVoltage(this, '5.0V')">
+                                <span class="volts">5.0V</span>
+                                <span class="family">TTL</span>
+                            </div>
+                            <div class="voltage-chip" onclick="selectVoltage(this, '3.3V')">
+                                <span class="volts">3.3V</span>
+                                <span class="family">LVCMOS</span>
+                            </div>
+                            <div class="voltage-chip" onclick="selectVoltage(this, '1.8V')">
+                                <span class="volts">1.8V</span>
+                                <span class="family">Low Power</span>
+                            </div>
+                            <div class="voltage-chip" onclick="selectVoltage(this, '1.2V')">
+                                <span class="volts">1.2V</span>
+                                <span class="family">Ultra LP</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Mixed Logic Artifacts -->
+                <div class="right-panel">
+                    <div class="artifacts-panel">
+                        <div class="panel-title">
+                            <div class="icon">📜</div>
+                            Mixed-Logic Artifacts You'll Encounter
+                        </div>
+                        <div class="artifacts-subtitle">
+                            While positive logic dominates, historical practices and engineering trade-offs left traces in notation, vocabulary, and schematics that you need to recognize.
+                        </div>
+
+                        <div class="artifact-grid">
+                            <!-- Active-Low Notation -->
+                            <div class="artifact-card">
+                                <div class="artifact-card-title">
+                                    <span class="card-icon">📝</span>
+                                    Active-Low Notation Styles
+                                </div>
+                                <div class="notation-examples">
+                                    <div class="notation-row">
+                                        <span class="notation-symbol" style="text-decoration: overline;">CS</span>
+                                        <span class="notation-meaning">Overbar (traditional)</span>
+                                    </div>
+                                    <div class="notation-row">
+                                        <span class="notation-symbol">/CS</span>
+                                        <span class="notation-meaning">Slash prefix (ASCII-friendly)</span>
+                                    </div>
+                                    <div class="notation-row">
+                                        <span class="notation-symbol">CS_N</span>
+                                        <span class="notation-meaning">_N suffix (Verilog/VHDL)</span>
+                                    </div>
+                                    <div class="notation-row">
+                                        <span class="notation-symbol">nCS</span>
+                                        <span class="notation-meaning">n prefix (some vendors)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vocabulary -->
+                            <div class="artifact-card">
+                                <div class="artifact-card-title">
+                                    <span class="card-icon">💬</span>
+                                    Vocabulary to Know
+                                </div>
+                                <div class="vocab-list">
+                                    <div class="vocab-item"><span class="vocab-term">"Asserted"</span> — signal is in its active state</div>
+                                    <div class="vocab-item"><span class="vocab-term">"Deasserted"</span> — signal is inactive</div>
+                                    <div class="vocab-item"><span class="vocab-term">"Active-low"</span> — asserted when LOW</div>
+                                    <div class="vocab-item"><span class="vocab-term">"Active-high"</span> — asserted when HIGH</div>
+                                    <div class="vocab-item" style="margin-top: 6px; font-size: 12px; color: #8b949e;">
+                                        Using "asserted" avoids confusion about whether 0 or 1 means "on"
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bubble Notation -->
+                            <div class="artifact-card">
+                                <div class="artifact-card-title">
+                                    <span class="card-icon">◯</span>
+                                    Bubble Notation on Schematics
+                                </div>
+                                <div class="bubble-visual">
+                                    <div class="gate-with-bubble">
+                                        <svg width="80" height="50" viewBox="0 0 80 50">
+                                            <!-- Simple buffer -->
+                                            <path d="M10 10 L10 40 L50 25 Z" fill="none" stroke="#8b949e" stroke-width="2"/>
+                                            <line x1="50" y1="25" x2="70" y2="25" stroke="#8b949e" stroke-width="2"/>
+                                        </svg>
+                                        <span class="gate-label">No bubble</span>
+                                        <span class="bubble-meaning">Active-high</span>
+                                    </div>
+                                    <div class="gate-with-bubble">
+                                        <svg width="80" height="50" viewBox="0 0 80 50">
+                                            <!-- Inverter with bubble -->
+                                            <path d="M10 10 L10 40 L50 25 Z" fill="none" stroke="#ffa657" stroke-width="2"/>
+                                            <circle cx="56" cy="25" r="6" fill="none" stroke="#ffa657" stroke-width="2"/>
+                                            <line x1="62" y1="25" x2="70" y2="25" stroke="#ffa657" stroke-width="2"/>
+                                        </svg>
+                                        <span class="gate-label">Output bubble</span>
+                                        <span class="bubble-meaning">Active-low output</span>
+                                    </div>
+                                    <div class="gate-with-bubble">
+                                        <svg width="80" height="50" viewBox="0 0 80 50">
+                                            <!-- Gate with input bubble -->
+                                            <circle cx="14" cy="18" r="5" fill="none" stroke="#ffa657" stroke-width="2"/>
+                                            <path d="M20 10 L20 40 L55 25 Z" fill="none" stroke="#ffa657" stroke-width="2"/>
+                                            <line x1="55" y1="25" x2="70" y2="25" stroke="#ffa657" stroke-width="2"/>
+                                        </svg>
+                                        <span class="gate-label">Input bubble</span>
+                                        <span class="bubble-meaning">Active-low input</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Common Active-Low Signals -->
+                            <div class="artifact-card">
+                                <div class="artifact-card-title">
+                                    <span class="card-icon">🔌</span>
+                                    Common Active-Low Signals
+                                </div>
+                                <div class="signal-grid">
+                                    <div class="signal-item">
+                                        <span class="signal-name">/CS</span>
+                                        <span class="signal-desc">Chip Select</span>
+                                    </div>
+                                    <div class="signal-item">
+                                        <span class="signal-name">/RST</span>
+                                        <span class="signal-desc">Reset</span>
+                                    </div>
+                                    <div class="signal-item">
+                                        <span class="signal-name">/IRQ</span>
+                                        <span class="signal-desc">Interrupt</span>
+                                    </div>
+                                    <div class="signal-item">
+                                        <span class="signal-name">/WE</span>
+                                        <span class="signal-desc">Write Enable</span>
+                                    </div>
+                                    <div class="signal-item">
+                                        <span class="signal-name">/OE</span>
+                                        <span class="signal-desc">Output Enable</span>
+                                    </div>
+                                    <div class="signal-item">
+                                        <span class="signal-name">/SS</span>
+                                        <span class="signal-desc">SPI Select</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- De Morgan Historical Note -->
+                        <div class="demorgan-note">
+                            <div class="demorgan-title">
+                                <span>🔄</span>
+                                Why This History Matters: De Morgan's Theorem
+                            </div>
+                            <div class="demorgan-content">
+                                <div class="demorgan-equation">
+                                    NAND ≡ OR with inverted inputs
+                                </div>
+                                <div class="demorgan-explain">
+                                    Engineers historically used "negative logic" thinking to optimize gate-level designs. A physical NAND gate can be drawn as an OR with input bubbles—same silicon, different interpretation. You'll see this equivalence in older texts and optimization techniques.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Insight -->
+            <div class="footer">
+                <div class="key-insight">
+                    <p><strong>Key Insight:</strong> Default to positive logic in your thinking, but <em>recognize the artifacts</em>—when you see a bar, slash, bubble, or "_N" suffix, the signal is active-low. The notation tells you; you don't need to switch mental models.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Voltage selection
+        function selectVoltage(element, voltage) {
+            document.querySelectorAll('.voltage-chip').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            document.getElementById('highVoltDisplay').textContent = voltage;
+        }
+    </script>
+</body>
+</html>

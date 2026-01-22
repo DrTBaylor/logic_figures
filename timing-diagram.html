@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Logic Timing Diagrams - Propagation Delay Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0f;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #30363d;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 600;
+            color: #e6edf3;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            font-size: 18px;
+            color: #8b949e;
+        }
+
+        .header .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            color: #58a6ff;
+            margin-top: 8px;
+        }
+
+        /* Main content area */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex: 1;
+        }
+
+        /* Left panel - Circuit */
+        .circuit-panel {
+            width: 700px;
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e6edf3;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #58a6ff;
+            border-radius: 2px;
+        }
+
+        .circuit-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .circuit-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls-panel {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #30363d;
+        }
+
+        .input-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .input-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e6edf3;
+            width: 80px;
+        }
+
+        .toggle-btn {
+            width: 80px;
+            height: 44px;
+            border-radius: 22px;
+            border: 2px solid #30363d;
+            background: #21262d;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn::after {
+            content: '';
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #8b949e;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #0891b2;
+            border-color: #00d4ff;
+        }
+
+        .toggle-btn.active::after {
+            left: 40px;
+            background: #e6edf3;
+        }
+
+        .toggle-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            width: 30px;
+            text-align: center;
+        }
+
+        .toggle-value.high {
+            color: #00d4ff;
+        }
+
+        .toggle-value.low {
+            color: #484f58;
+        }
+
+        /* Right panel - Timing Diagram */
+        .timing-panel {
+            flex: 1;
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timing-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .signal-row {
+            display: flex;
+            align-items: center;
+            height: 70px;
+        }
+
+        .signal-label {
+            width: 80px;
+            font-size: 18px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: #e6edf3;
+            text-align: right;
+            padding-right: 15px;
+        }
+
+        .signal-label.input {
+            color: #58a6ff;
+        }
+
+        .signal-label.intermediate {
+            color: #f0883e;
+        }
+
+        .signal-label.output {
+            color: #a371f7;
+        }
+
+        .waveform-container {
+            flex: 1;
+            height: 50px;
+            background: #0d1117;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .waveform-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 30px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #30363d;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .legend-color.input { background: #58a6ff; }
+        .legend-color.intermediate { background: #f0883e; }
+        .legend-color.output { background: #a371f7; }
+
+        /* Gate delay indicator */
+        .delay-info {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #8b949e;
+        }
+
+        .delay-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .delay-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .delay-icon.not { background: #0891b2; color: #e6edf3; }
+        .delay-icon.and { background: #1f6feb; color: #e6edf3; }
+        .delay-icon.or { background: #8957e5; color: #e6edf3; }
+
+        /* Bottom info panel */
+        .info-panel {
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 12px;
+            border: 1px solid #30363d;
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .current-state {
+            display: flex;
+            gap: 30px;
+        }
+
+        .state-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .state-label {
+            color: #8b949e;
+            font-family: 'Courier New', monospace;
+        }
+
+        .state-value {
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+        }
+
+        .state-value.high { color: #00d4ff; }
+        .state-value.low { color: #484f58; }
+        .state-value.changing { color: #f0883e; animation: pulse 0.5s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .propagation-status {
+            font-size: 16px;
+            color: #8b949e;
+        }
+
+        .propagation-status.active {
+            color: #f0883e;
+            font-weight: 600;
+        }
+
+        /* SVG styles */
+        .gate {
+            fill: #21262d;
+            stroke: #30363d;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        .gate.active {
+            fill: #0891b2;
+            stroke: #00d4ff;
+        }
+
+        .gate-label {
+            fill: #e6edf3;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .wire {
+            stroke: #30363d;
+            stroke-width: 3;
+            fill: none;
+            transition: stroke 0.15s ease;
+        }
+
+        .wire.high {
+            stroke: #00d4ff;
+        }
+
+        .wire.changing {
+            stroke: #f0883e;
+            animation: wire-pulse 0.3s infinite;
+        }
+
+        @keyframes wire-pulse {
+            0%, 100% { stroke-opacity: 1; }
+            50% { stroke-opacity: 0.5; }
+        }
+
+        .node {
+            fill: #30363d;
+            transition: fill 0.15s ease;
+        }
+
+        .node.high {
+            fill: #00d4ff;
+        }
+
+        .input-node {
+            cursor: pointer;
+        }
+
+        .input-node:hover {
+            filter: brightness(1.2);
+        }
+
+        .signal-name {
+            fill: #8b949e;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .signal-name.input { fill: #58a6ff; }
+        .signal-name.intermediate { fill: #f0883e; }
+        .signal-name.output { fill: #a371f7; }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <!-- Header -->
+            <div class="header">
+                <h1>Digital Logic Timing Diagrams</h1>
+                <div class="subtitle">Understanding Propagation Delay in Combinational Circuits</div>
+                <div class="formula">F = A'B + AB' (XOR Function)</div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Circuit Panel -->
+                <div class="circuit-panel">
+                    <div class="panel-title">Circuit Schematic</div>
+                    <div class="circuit-container">
+                        <svg class="circuit-svg" viewBox="0 0 660 420">
+                            <!-- Input A -->
+                            <text x="30" y="100" class="signal-name input">A</text>
+                            <circle cx="60" cy="95" r="12" class="node input-node" id="nodeA" onclick="toggleInput('A')"/>
+                            
+                            <!-- A wiring -->
+                            <path d="M72 95 L90 95" class="wire" id="wireA_to_junc"/>
+                            <circle cx="90" cy="95" r="5" class="node" id="nodeA_junc"/>
+                            <path d="M90 95 L170 95" class="wire" id="wireA_to_NOT"/>
+                            <path d="M90 95 L90 250" class="wire" id="wireA_down"/>
+                            <path d="M90 250 L320 250" class="wire" id="wireA_to_AND2"/>
+                            
+                            <!-- Input B -->
+                            <text x="30" y="330" class="signal-name input">B</text>
+                            <circle cx="60" cy="325" r="12" class="node input-node" id="nodeB" onclick="toggleInput('B')"/>
+                            
+                            <!-- B wiring -->
+                            <path d="M72 325 L150 325" class="wire" id="wireB_to_junc"/>
+                            <circle cx="150" cy="325" r="5" class="node" id="nodeB_junc"/>
+                            <path d="M150 325 L170 325" class="wire" id="wireB_to_NOT"/>
+                            <path d="M150 325 L150 170" class="wire" id="wireB_up"/>
+                            <path d="M150 170 L320 170" class="wire" id="wireB_to_AND1"/>
+                            
+                            <!-- NOT gate for A -->
+                            <g id="gateNotA">
+                                <path d="M170 70 L170 120 L210 95 Z" class="gate"/>
+                                <circle cx="218" cy="95" r="8" class="gate"/>
+                                <text x="180" y="100" class="gate-label">NOT</text>
+                            </g>
+                            
+                            <!-- A' wiring -->
+                            <path d="M226 95 L270 95" class="wire" id="wireANot_right"/>
+                            <text x="238" y="80" class="signal-name intermediate">A'</text>
+                            <path d="M270 95 L270 140" class="wire" id="wireANot_down"/>
+                            <path d="M270 140 L320 140" class="wire" id="wireANot_to_AND1"/>
+                            
+                            <!-- NOT gate for B -->
+                            <g id="gateNotB">
+                                <path d="M170 300 L170 350 L210 325 Z" class="gate"/>
+                                <circle cx="218" cy="325" r="8" class="gate"/>
+                                <text x="180" y="330" class="gate-label">NOT</text>
+                            </g>
+                            
+                            <!-- B' wiring -->
+                            <path d="M226 325 L270 325" class="wire" id="wireBNot_right"/>
+                            <text x="238" y="345" class="signal-name intermediate">B'</text>
+                            <path d="M270 325 L270 280" class="wire" id="wireBNot_up"/>
+                            <path d="M270 280 L320 280" class="wire" id="wireBNot_to_AND2"/>
+                            
+                            <!-- AND gate 1 (A'B) - inputs at y=140 and y=170 -->
+                            <g id="gateAnd1">
+                                <path d="M320 125 L320 185 L350 185 Q380 185 380 155 Q380 125 350 125 Z" class="gate"/>
+                                <text x="332" y="160" class="gate-label">AND</text>
+                            </g>
+                            <path d="M380 155 L440 155" class="wire" id="wireAnd1_out"/>
+                            <text x="395" y="140" class="signal-name intermediate">A'B</text>
+                            
+                            <!-- AND gate 2 (AB') - inputs at y=250 and y=280 -->
+                            <g id="gateAnd2">
+                                <path d="M320 235 L320 295 L350 295 Q380 295 380 265 Q380 235 350 235 Z" class="gate"/>
+                                <text x="332" y="270" class="gate-label">AND</text>
+                            </g>
+                            <path d="M380 265 L440 265" class="wire" id="wireAnd2_out"/>
+                            <text x="395" y="255" class="signal-name intermediate">AB'</text>
+                            
+                            <!-- Wires to OR gate -->
+                            <path d="M440 155 L440 190" class="wire" id="wireOr_in1a"/>
+                            <path d="M440 190 L480 190" class="wire" id="wireOr_in1b"/>
+                            <path d="M440 265 L440 230" class="wire" id="wireOr_in2a"/>
+                            <path d="M440 230 L480 230" class="wire" id="wireOr_in2b"/>
+                            
+                            <!-- OR gate -->
+                            <g id="gateOr">
+                                <path d="M480 170 Q490 210 480 250 Q520 250 550 210 Q520 170 480 170" class="gate"/>
+                                <text x="500" y="215" class="gate-label">OR</text>
+                            </g>
+                            <path d="M550 210 L620 210" class="wire" id="wireF"/>
+                            <circle cx="620" cy="210" r="10" class="node" id="nodeF"/>
+                            <text x="635" y="215" class="signal-name output">F</text>
+                        </svg>
+                    </div>
+                    
+                    <div class="controls-panel">
+                        <div class="input-control">
+                            <span class="input-label">Input A:</span>
+                            <button class="toggle-btn" id="toggleA" onclick="toggleInput('A')"></button>
+                            <span class="toggle-value low" id="valueA">0</span>
+                        </div>
+                        <div class="input-control">
+                            <span class="input-label">Input B:</span>
+                            <button class="toggle-btn" id="toggleB" onclick="toggleInput('B')"></button>
+                            <span class="toggle-value low" id="valueB">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timing Panel -->
+                <div class="timing-panel">
+                    <div class="panel-title">Timing Diagram</div>
+                    <div class="timing-container">
+                        <div class="signal-row">
+                            <div class="signal-label input">A</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveA"></canvas>
+                            </div>
+                        </div>
+                        <div class="signal-row">
+                            <div class="signal-label input">B</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveB"></canvas>
+                            </div>
+                        </div>
+                        <div class="signal-row">
+                            <div class="signal-label intermediate">A'</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveANot"></canvas>
+                            </div>
+                        </div>
+                        <div class="signal-row">
+                            <div class="signal-label intermediate">B'</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveBNot"></canvas>
+                            </div>
+                        </div>
+                        <div class="signal-row">
+                            <div class="signal-label intermediate">A'B</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveANotB"></canvas>
+                            </div>
+                        </div>
+                        <div class="signal-row">
+                            <div class="signal-label intermediate">AB'</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveABNot"></canvas>
+                            </div>
+                        </div>
+                        <div class="signal-row">
+                            <div class="signal-label output">F</div>
+                            <div class="waveform-container">
+                                <canvas class="waveform-canvas" id="waveF"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color input"></div>
+                            <span>Inputs (A, B)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color intermediate"></div>
+                            <span>Intermediate Signals</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color output"></div>
+                            <span>Output (F)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="delay-info">
+                        <div class="delay-item">
+                            <div class="delay-icon not">1</div>
+                            <span>NOT: 300ms delay</span>
+                        </div>
+                        <div class="delay-item">
+                            <div class="delay-icon and">2</div>
+                            <span>AND: 300ms delay</span>
+                        </div>
+                        <div class="delay-item">
+                            <div class="delay-icon or">3</div>
+                            <span>OR: 300ms delay</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="info-panel">
+                <div class="current-state">
+                    <div class="state-item">
+                        <span class="state-label">A =</span>
+                        <span class="state-value low" id="stateA">0</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="state-label">B =</span>
+                        <span class="state-value low" id="stateB">0</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="state-label">A' =</span>
+                        <span class="state-value" id="stateANot">1</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="state-label">B' =</span>
+                        <span class="state-value" id="stateBNot">1</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="state-label">A'B =</span>
+                        <span class="state-value low" id="stateANotB">0</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="state-label">AB' =</span>
+                        <span class="state-value low" id="stateABNot">0</span>
+                    </div>
+                    <div class="state-item">
+                        <span class="state-label">F =</span>
+                        <span class="state-value low" id="stateF">0</span>
+                    </div>
+                </div>
+                <div class="propagation-status" id="propStatus">Click A or B to see propagation delay</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        const GATE_DELAY = 300; // ms per gate level
+        const SAMPLE_INTERVAL = 20; // ms between waveform samples
+        const WAVEFORM_HISTORY = 500; // number of samples to keep
+
+        // Signal state
+        let signals = {
+            A: 0,
+            B: 0,
+            ANot: 1,
+            BNot: 1,
+            ANotB: 0,
+            ABNot: 0,
+            F: 0
+        };
+
+        // Pending changes (for propagation delay simulation)
+        let pendingChanges = [];
+
+        // Waveform history
+        let waveforms = {
+            A: [],
+            B: [],
+            ANot: [],
+            BNot: [],
+            ANotB: [],
+            ABNot: [],
+            F: []
+        };
+
+        // Initialize waveforms with current state
+        for (let key in waveforms) {
+            for (let i = 0; i < WAVEFORM_HISTORY; i++) {
+                waveforms[key].push(signals[key]);
+            }
+        }
+
+        // Canvas contexts
+        const canvases = {};
+        const ctxs = {};
+
+        // Auto-resize
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+            
+            // Resize canvases
+            resizeCanvases();
+        }
+
+        function resizeCanvases() {
+            const canvasIds = ['waveA', 'waveB', 'waveANot', 'waveBNot', 'waveANotB', 'waveABNot', 'waveF'];
+            canvasIds.forEach(id => {
+                const canvas = document.getElementById(id);
+                const container = canvas.parentElement;
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+                canvases[id] = canvas;
+                ctxs[id] = canvas.getContext('2d');
+            });
+        }
+
+        // Toggle input
+        function toggleInput(input) {
+            const newValue = signals[input] === 0 ? 1 : 0;
+            signals[input] = newValue;
+            
+            // Update UI immediately
+            updateInputUI(input, newValue);
+            
+            // Schedule propagation
+            schedulePropagation(input);
+        }
+
+        function updateInputUI(input, value) {
+            const toggle = document.getElementById('toggle' + input);
+            const valueEl = document.getElementById('value' + input);
+            const stateEl = document.getElementById('state' + input);
+            const nodeEl = document.getElementById('node' + input);
+            
+            if (value === 1) {
+                toggle.classList.add('active');
+                valueEl.textContent = '1';
+                valueEl.classList.remove('low');
+                valueEl.classList.add('high');
+                stateEl.textContent = '1';
+                stateEl.classList.remove('low');
+                stateEl.classList.add('high');
+                nodeEl.classList.add('high');
+            } else {
+                toggle.classList.remove('active');
+                valueEl.textContent = '0';
+                valueEl.classList.remove('high');
+                valueEl.classList.add('low');
+                stateEl.textContent = '0';
+                stateEl.classList.remove('high');
+                stateEl.classList.add('low');
+                nodeEl.classList.remove('high');
+            }
+            
+            // Update input wires
+            updateWires();
+        }
+
+        function schedulePropagation(changedInput) {
+            const now = Date.now();
+            
+            // Clear any existing pending changes for affected signals
+            pendingChanges = pendingChanges.filter(p => {
+                if (changedInput === 'A') {
+                    return !['ANot', 'ANotB', 'ABNot', 'F'].includes(p.signal);
+                } else {
+                    return !['BNot', 'ANotB', 'ABNot', 'F'].includes(p.signal);
+                }
+            });
+            
+            // Show propagation status
+            document.getElementById('propStatus').textContent = 'Propagating through gates...';
+            document.getElementById('propStatus').classList.add('active');
+            
+            // Level 1: NOT gates (300ms delay)
+            if (changedInput === 'A') {
+                const newANot = signals.A === 0 ? 1 : 0;
+                pendingChanges.push({
+                    signal: 'ANot',
+                    value: newANot,
+                    time: now + GATE_DELAY,
+                    gate: 'gateNotA'
+                });
+            } else {
+                const newBNot = signals.B === 0 ? 1 : 0;
+                pendingChanges.push({
+                    signal: 'BNot',
+                    value: newBNot,
+                    time: now + GATE_DELAY,
+                    gate: 'gateNotB'
+                });
+            }
+            
+            // Level 2: AND gates (600ms total delay from input)
+            // We need to recalculate based on what the signals WILL be
+            setTimeout(() => {
+                const futureANot = changedInput === 'A' ? (signals.A === 0 ? 1 : 0) : signals.ANot;
+                const futureBNot = changedInput === 'B' ? (signals.B === 0 ? 1 : 0) : signals.BNot;
+                
+                const newANotB = futureANot & signals.B;
+                const newABNot = signals.A & futureBNot;
+                
+                pendingChanges.push({
+                    signal: 'ANotB',
+                    value: newANotB,
+                    time: Date.now() + GATE_DELAY,
+                    gate: 'gateAnd1'
+                });
+                pendingChanges.push({
+                    signal: 'ABNot',
+                    value: newABNot,
+                    time: Date.now() + GATE_DELAY,
+                    gate: 'gateAnd2'
+                });
+                
+                // Level 3: OR gate (900ms total delay from input)
+                setTimeout(() => {
+                    const newF = newANotB | newABNot;
+                    pendingChanges.push({
+                        signal: 'F',
+                        value: newF,
+                        time: Date.now() + GATE_DELAY,
+                        gate: 'gateOr'
+                    });
+                }, GATE_DELAY);
+            }, GATE_DELAY);
+        }
+
+        function processPendingChanges() {
+            const now = Date.now();
+            let anyProcessed = false;
+            
+            pendingChanges = pendingChanges.filter(change => {
+                if (now >= change.time) {
+                    // Apply the change
+                    signals[change.signal] = change.value;
+                    updateSignalUI(change.signal, change.value);
+                    
+                    // Flash the gate
+                    if (change.gate) {
+                        flashGate(change.gate);
+                    }
+                    
+                    anyProcessed = true;
+                    return false; // Remove from pending
+                }
+                return true; // Keep in pending
+            });
+            
+            if (pendingChanges.length === 0 && anyProcessed) {
+                document.getElementById('propStatus').textContent = 'Propagation complete';
+                document.getElementById('propStatus').classList.remove('active');
+                setTimeout(() => {
+                    document.getElementById('propStatus').textContent = 'Click A or B to see propagation delay';
+                }, 1000);
+            }
+        }
+
+        function updateSignalUI(signal, value) {
+            const stateEl = document.getElementById('state' + signal);
+            if (stateEl) {
+                stateEl.textContent = value;
+                stateEl.classList.remove('low', 'high', 'changing');
+                stateEl.classList.add(value === 1 ? 'high' : 'low');
+            }
+            updateWires();
+        }
+
+        function flashGate(gateId) {
+            const gate = document.getElementById(gateId);
+            if (gate) {
+                gate.querySelectorAll('.gate').forEach(el => {
+                    el.classList.add('active');
+                    setTimeout(() => el.classList.remove('active'), 200);
+                });
+            }
+        }
+
+        function updateWires() {
+            // Input A wires
+            const aHigh = signals.A === 1;
+            setWireState(['wireA_to_junc', 'wireA_to_NOT', 'wireA_down', 'wireA_to_AND2'], aHigh);
+            document.getElementById('nodeA_junc').classList.toggle('high', aHigh);
+            
+            // Input B wires
+            const bHigh = signals.B === 1;
+            setWireState(['wireB_to_junc', 'wireB_to_NOT', 'wireB_up', 'wireB_to_AND1'], bHigh);
+            document.getElementById('nodeB_junc').classList.toggle('high', bHigh);
+            
+            // A' wires
+            const aNotHigh = signals.ANot === 1;
+            setWireState(['wireANot_right', 'wireANot_down', 'wireANot_to_AND1'], aNotHigh);
+            
+            // B' wires
+            const bNotHigh = signals.BNot === 1;
+            setWireState(['wireBNot_right', 'wireBNot_up', 'wireBNot_to_AND2'], bNotHigh);
+            
+            // A'B wire
+            const aNotBHigh = signals.ANotB === 1;
+            setWireState(['wireAnd1_out', 'wireOr_in1a', 'wireOr_in1b'], aNotBHigh);
+            
+            // AB' wire
+            const abNotHigh = signals.ABNot === 1;
+            setWireState(['wireAnd2_out', 'wireOr_in2a', 'wireOr_in2b'], abNotHigh);
+            
+            // F wire
+            const fHigh = signals.F === 1;
+            setWireState(['wireF'], fHigh);
+            document.getElementById('nodeF').classList.toggle('high', fHigh);
+        }
+
+        function setWireState(wireIds, high) {
+            wireIds.forEach(id => {
+                const wire = document.getElementById(id);
+                if (wire) {
+                    wire.classList.toggle('high', high);
+                }
+            });
+        }
+
+        // Waveform rendering
+        function updateWaveforms() {
+            // Add current values to history
+            waveforms.A.push(signals.A);
+            waveforms.B.push(signals.B);
+            waveforms.ANot.push(signals.ANot);
+            waveforms.BNot.push(signals.BNot);
+            waveforms.ANotB.push(signals.ANotB);
+            waveforms.ABNot.push(signals.ABNot);
+            waveforms.F.push(signals.F);
+            
+            // Trim to max length
+            for (let key in waveforms) {
+                if (waveforms[key].length > WAVEFORM_HISTORY) {
+                    waveforms[key].shift();
+                }
+            }
+        }
+
+        function drawWaveforms() {
+            const colors = {
+                waveA: '#58a6ff',
+                waveB: '#58a6ff',
+                waveANot: '#f0883e',
+                waveBNot: '#f0883e',
+                waveANotB: '#f0883e',
+                waveABNot: '#f0883e',
+                waveF: '#a371f7'
+            };
+            
+            const highColor = '#00d4ff';  // Bright cyan for high signals
+            const lowColor = '#484f58';   // Dark gray for low signals
+            
+            const signalMap = {
+                waveA: 'A',
+                waveB: 'B',
+                waveANot: 'ANot',
+                waveBNot: 'BNot',
+                waveANotB: 'ANotB',
+                waveABNot: 'ABNot',
+                waveF: 'F'
+            };
+            
+            for (let canvasId in ctxs) {
+                const ctx = ctxs[canvasId];
+                const canvas = canvases[canvasId];
+                if (!ctx || !canvas) continue;
+                
+                const w = canvas.width;
+                const h = canvas.height;
+                const data = waveforms[signalMap[canvasId]];
+                const accentColor = colors[canvasId];
+                
+                // Clear
+                ctx.fillStyle = '#0d1117';
+                ctx.fillRect(0, 0, w, h);
+                
+                // Draw grid lines
+                ctx.strokeStyle = '#21262d';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, h * 0.2);
+                ctx.lineTo(w, h * 0.2);
+                ctx.moveTo(0, h * 0.8);
+                ctx.lineTo(w, h * 0.8);
+                ctx.stroke();
+                
+                // Draw 1/0 labels on the right edge
+                ctx.font = 'bold 12px Courier New';
+                ctx.fillStyle = highColor;
+                ctx.fillText('1', w - 15, h * 0.25);
+                ctx.fillStyle = lowColor;
+                ctx.fillText('0', w - 15, h * 0.85);
+                
+                // Draw waveform with color-coded segments
+                const padding = 8;
+                const highY = padding;
+                const lowY = h - padding;
+                
+                for (let i = 1; i < data.length; i++) {
+                    const prevX = ((i - 1) / WAVEFORM_HISTORY) * (w - 25);
+                    const x = (i / WAVEFORM_HISTORY) * (w - 25);
+                    const prevVal = data[i - 1];
+                    const val = data[i];
+                    const prevY = prevVal === 1 ? highY : lowY;
+                    const y = val === 1 ? highY : lowY;
+                    
+                    // Set color and line width based on signal level
+                    ctx.strokeStyle = prevVal === 1 ? highColor : lowColor;
+                    ctx.lineWidth = prevVal === 1 ? 4 : 2;  // Thicker line for high
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(prevX, prevY);
+                    
+                    if (val !== prevVal) {
+                        // Transition - draw horizontal then vertical
+                        ctx.lineTo(x, prevY);
+                        ctx.stroke();
+                        
+                        // Draw vertical transition with gradient effect
+                        ctx.strokeStyle = val === 1 ? highColor : lowColor;
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(x, prevY);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                    } else {
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Main loop
+        let lastSampleTime = 0;
+        function mainLoop(timestamp) {
+            // Process pending signal changes
+            processPendingChanges();
+            
+            // Sample waveforms at regular intervals
+            if (timestamp - lastSampleTime >= SAMPLE_INTERVAL) {
+                updateWaveforms();
+                lastSampleTime = timestamp;
+            }
+            
+            // Draw waveforms
+            drawWaveforms();
+            
+            requestAnimationFrame(mainLoop);
+        }
+
+        // Initialize
+        autoResize();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // Set initial states
+        updateWires();
+        document.getElementById('stateANot').textContent = '1';
+        document.getElementById('stateANot').classList.add('high');
+        document.getElementById('stateBNot').textContent = '1';
+        document.getElementById('stateBNot').classList.add('high');
+
+        // Start main loop
+        requestAnimationFrame(mainLoop);
+    </script>
+</body>
+</html>
