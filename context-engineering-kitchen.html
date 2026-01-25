@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>From Recipe Cards to Full Kitchen</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            padding: 30px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4fc3f7;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #90a4ae;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            gap: 30px;
+            min-height: 0;
+        }
+
+        /* Era labels */
+        .era-label {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding: 8px 20px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .era-label.old {
+            background: rgba(255, 167, 38, 0.2);
+            color: #ffcc80;
+            border: 2px solid #ffa726;
+        }
+
+        .era-label.new {
+            background: rgba(102, 187, 106, 0.2);
+            color: #a5d6a7;
+            border: 2px solid #66bb6a;
+        }
+
+        /* Left panel - Recipe Cards */
+        .recipe-section {
+            flex: 0 0 480px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .recipe-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .recipe-card {
+            background: linear-gradient(145deg, #fff8e7 0%, #fff3d4 100%);
+            border: 3px solid #d4a574;
+            border-radius: 12px;
+            padding: 16px 20px;
+            color: #5d4037;
+            box-shadow: 4px 4px 0 rgba(139, 90, 43, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .recipe-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 0 rgba(139, 90, 43, 0.3);
+        }
+
+        .recipe-card.selected {
+            border-color: #ff7043;
+            box-shadow: 0 0 20px rgba(255, 112, 67, 0.4);
+        }
+
+        .recipe-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #4e342e;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recipe-title .icon {
+            font-size: 24px;
+        }
+
+        .recipe-ingredients {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ingredient {
+            background: rgba(121, 85, 72, 0.15);
+            border: 1px solid #a1887f;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .ingredient span {
+            font-weight: 700;
+            color: #d84315;
+        }
+
+        .recipe-note {
+            margin-top: 16px;
+            padding: 12px;
+            background: rgba(255, 167, 38, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #90a4ae;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Arrow between sections */
+        .evolution-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+        }
+
+        .arrow-line {
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #ffa726, #66bb6a);
+            position: relative;
+        }
+
+        .arrow-line::after {
+            content: '';
+            position: absolute;
+            right: -12px;
+            top: -8px;
+            border: 10px solid transparent;
+            border-left: 16px solid #66bb6a;
+        }
+
+        .arrow-text {
+            font-size: 14px;
+            color: #78909c;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* Right panel - Kitchen */
+        .kitchen-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .kitchen {
+            flex: 1;
+            width: 100%;
+            background: linear-gradient(180deg, #263238 0%, #1a1a2e 100%);
+            border: 3px solid #546e7a;
+            border-radius: 16px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 16px;
+            position: relative;
+        }
+
+        .kitchen-station {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid #546e7a;
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .kitchen-station:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.02);
+        }
+
+        .kitchen-station.highlighted {
+            border-color: #4fc3f7;
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.4);
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        /* Counter station - central hub styling */
+        .kitchen-station.counter-station {
+            background: rgba(102, 187, 106, 0.1);
+            border-color: #66bb6a;
+        }
+
+        .kitchen-station.counter-station .station-name {
+            color: #81c784;
+        }
+
+        .kitchen-station.counter-station .station-maps {
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        /* Context components list */
+        .context-components {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 60px;
+        }
+
+        .draggable-items {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            margin-top: 8px;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .context-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .context-item.draggable {
+            cursor: grab;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .context-item.draggable:hover {
+            background: rgba(79, 195, 247, 0.2);
+            border-color: #4fc3f7;
+            transform: translateX(2px);
+        }
+
+        .context-item.draggable:active {
+            cursor: grabbing;
+        }
+
+        .context-item.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        .context-item.in-counter {
+            background: rgba(102, 187, 106, 0.15);
+            border: 1px solid #66bb6a;
+            cursor: default;
+        }
+
+        .component-name {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .component-source {
+            color: #78909c;
+            font-size: 10px;
+        }
+
+        /* Drop zone styling */
+        .drop-zone {
+            transition: all 0.2s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #81c784;
+            box-shadow: 0 0 30px rgba(102, 187, 106, 0.5);
+            background: rgba(102, 187, 106, 0.2);
+        }
+
+        .drop-hint {
+            color: #546e7a;
+            font-size: 12px;
+            text-align: center;
+            padding: 20px 10px;
+            border: 2px dashed #546e7a;
+            border-radius: 6px;
+            font-style: italic;
+        }
+
+        .drop-hint.hidden {
+            display: none;
+        }
+
+        /* Reset button */
+        .reset-btn {
+            margin-top: 8px;
+            background: rgba(255, 87, 34, 0.2);
+            border: 2px solid #ff7043;
+            border-radius: 6px;
+            color: #ffab91;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 87, 34, 0.4);
+            border-color: #ff8a65;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        /* Item group labels */
+        .item-group-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #78909c;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            padding-left: 2px;
+        }
+
+        .item-group-label:first-child {
+            margin-top: 0;
+        }
+
+        .station-icon {
+            font-size: 36px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .station-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4fc3f7;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .station-maps {
+            font-size: 12px;
+            color: #78909c;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .station-desc {
+            font-size: 13px;
+            color: #b0bec5;
+            text-align: center;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        /* Special styling for center workflow area */
+        .workflow-area {
+            grid-column: 1 / -1;
+            background: rgba(102, 187, 106, 0.1);
+            border: 2px dashed #66bb6a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 16px;
+        }
+
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .workflow-box {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #66bb6a;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: #a5d6a7;
+        }
+
+        .workflow-arrow {
+            color: #66bb6a;
+            font-size: 20px;
+        }
+
+        /* Feedback loop styling */
+        .workflow-loop {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .loop-container {
+            display: flex;
+            align-items: center;
+            background: rgba(79, 195, 247, 0.1);
+            border: 2px solid #4fc3f7;
+            border-radius: 12px;
+            padding: 12px 16px;
+            gap: 8px;
+        }
+
+        .loop-box {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #66bb6a;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: #a5d6a7;
+        }
+
+        .loop-box.orchestrate {
+            border-color: #4fc3f7;
+            color: #b3e5fc;
+        }
+
+        .loop-box.generate {
+            border-color: #ab47bc;
+            color: #ce93d8;
+        }
+
+        .loop-arrows {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 18px;
+            line-height: 1;
+            gap: 2px;
+        }
+
+        .loop-arrow-right {
+            color: #4fc3f7;
+        }
+
+        .loop-arrow-left {
+            color: #ab47bc;
+        }
+
+        .loop-label {
+            font-size: 11px;
+            color: #78909c;
+            font-style: italic;
+        }
+
+        /* Info panel that shows when stations are clicked */
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(13, 27, 42, 0.95);
+            border: 2px solid #4fc3f7;
+            border-radius: 12px;
+            padding: 16px 24px;
+            max-width: 600px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .info-panel.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .info-panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4fc3f7;
+            margin-bottom: 8px;
+        }
+
+        .info-panel-text {
+            font-size: 14px;
+            color: #b0bec5;
+            line-height: 1.5;
+        }
+
+        /* Bottom insight */
+        .insight {
+            background: rgba(79, 195, 247, 0.1);
+            border: 2px solid rgba(79, 195, 247, 0.3);
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 15px;
+            color: #b3e5fc;
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .insight strong {
+            color: #4fc3f7;
+        }
+
+        .footer {
+            text-align: center;
+            color: #607d8b;
+            font-size: 13px;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            
+            <h1>From Recipe Cards to Full Kitchen</h1>
+            <p class="subtitle">The evolution from prompt engineering to context engineering</p>
+
+            <div class="content">
+                <!-- Left: Recipe Cards (Old Way) -->
+                <div class="recipe-section">
+                    <div class="era-label old">2022–2023: Prompt Engineering</div>
+                    
+                    <div class="recipe-cards">
+                        <div class="recipe-card" onclick="selectRecipe(this, 'race')">
+                            <div class="recipe-title"><span class="icon">📝</span> RACE</div>
+                            <div class="recipe-ingredients">
+                                <div class="ingredient"><span>R</span>ole</div>
+                                <div class="ingredient"><span>A</span>ction</div>
+                                <div class="ingredient"><span>C</span>ontext</div>
+                                <div class="ingredient"><span>E</span>xpectation</div>
+                            </div>
+                        </div>
+                        
+                        <div class="recipe-card" onclick="selectRecipe(this, 'risen')">
+                            <div class="recipe-title"><span class="icon">📋</span> RISEN</div>
+                            <div class="recipe-ingredients">
+                                <div class="ingredient"><span>R</span>ole</div>
+                                <div class="ingredient"><span>I</span>nstructions</div>
+                                <div class="ingredient"><span>S</span>teps</div>
+                                <div class="ingredient"><span>E</span>nd goal</div>
+                                <div class="ingredient"><span>N</span>arrowing</div>
+                            </div>
+                        </div>
+                        
+                        <div class="recipe-card" onclick="selectRecipe(this, 'ape')">
+                            <div class="recipe-title"><span class="icon">🎯</span> APE</div>
+                            <div class="recipe-ingredients">
+                                <div class="ingredient"><span>A</span>ction</div>
+                                <div class="ingredient"><span>P</span>urpose</div>
+                                <div class="ingredient"><span>E</span>xpectation</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-note">
+                        These checklists taught <strong>what information models need</strong>—the same principles now applied at system scale.
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="evolution-arrow">
+                    <div class="arrow-line"></div>
+                    <div class="arrow-text">Same ingredients,<br>bigger kitchen</div>
+                </div>
+
+                <!-- Right: Kitchen (New Way) -->
+                <div class="kitchen-section">
+                    <div class="era-label new">2024–2025: Context Engineering</div>
+                    
+                    <div class="kitchen">
+                        <!-- Top row: Storage & Retrieval -->
+                        <div class="kitchen-station" data-station="pantry">
+                            <div class="station-icon">🗄️</div>
+                            <div class="station-name">Pantry</div>
+                            <div class="station-maps">Knowledge Bases</div>
+                            <div class="station-desc">Long-term storage: docs, embeddings, vector databases</div>
+                        </div>
+                        
+                        <div class="kitchen-station" data-station="prep">
+                            <div class="station-icon">🔪</div>
+                            <div class="station-name">Prep Station</div>
+                            <div class="station-maps">RAG / Retrieval</div>
+                            <div class="draggable-items">
+                                <div class="context-item draggable" draggable="true" data-item="rag">
+                                    <span class="component-name">Retrieved Docs</span>
+                                    <span class="component-source">📄 Relevant</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="embeddings">
+                                    <span class="component-name">Vector Search</span>
+                                    <span class="component-source">🔍 Semantic</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="kitchen-station" data-station="recipe">
+                            <div class="station-icon">📖</div>
+                            <div class="station-name">Recipe Book</div>
+                            <div class="station-maps">Instructions & Features</div>
+                            <div class="draggable-items">
+                                <div class="item-group-label">User-Defined</div>
+                                <div class="context-item draggable" draggable="true" data-item="system">
+                                    <span class="component-name">System Prompt</span>
+                                    <span class="component-source">📖 Custom</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="persona">
+                                    <span class="component-name">Persona / Role</span>
+                                    <span class="component-source">📖 Custom</span>
+                                </div>
+                                <div class="item-group-label">LLM Features</div>
+                                <div class="context-item draggable" draggable="true" data-item="reasoning">
+                                    <span class="component-name">Reasoning Mode</span>
+                                    <span class="component-source">🔄 Extended</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="tooluse">
+                                    <span class="component-name">Tool Use</span>
+                                    <span class="component-source">⚙️ Enabled</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Middle row: Active cooking -->
+                        <div class="kitchen-station" data-station="tools">
+                            <div class="station-icon">🔧</div>
+                            <div class="station-name">Connections</div>
+                            <div class="station-maps">Tools & External Services</div>
+                            <div class="draggable-items">
+                                <div class="context-item draggable" draggable="true" data-item="websearch">
+                                    <span class="component-name">Web Search</span>
+                                    <span class="component-source">🌐 Results</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="imagegen">
+                                    <span class="component-name">Image Creation</span>
+                                    <span class="component-source">🎨 Generated</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="codeexec">
+                                    <span class="component-name">Code Execution</span>
+                                    <span class="component-source">💻 Output</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="appconnectors">
+                                    <span class="component-name">App Connectors</span>
+                                    <span class="component-source">🔌 MCP/APIs</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="kitchen-station counter-station drop-zone" data-station="counter" id="counterDropZone">
+                            <div class="station-icon">🍳</div>
+                            <div class="station-name">Counter</div>
+                            <div class="station-maps">Context Window — What the LLM Sees</div>
+                            <div class="context-components" id="contextComponents">
+                                <div class="drop-hint">Drag items here to build the context window</div>
+                            </div>
+                            <button class="reset-btn" onclick="resetCounter()">↺ Reset Counter</button>
+                        </div>
+                        
+                        <div class="kitchen-station" data-station="memory">
+                            <div class="station-icon">🧠</div>
+                            <div class="station-name">Memory</div>
+                            <div class="station-maps">Stored Context</div>
+                            <div class="draggable-items">
+                                <div class="item-group-label">Long-term</div>
+                                <div class="context-item draggable" draggable="true" data-item="usermemory">
+                                    <span class="component-name">User Memory</span>
+                                    <span class="component-source">🧠 Persistent</span>
+                                </div>
+                                <div class="item-group-label">Short-term</div>
+                                <div class="context-item draggable" draggable="true" data-item="chathistory">
+                                    <span class="component-name">Chat History</span>
+                                    <span class="component-source">💬 Session</span>
+                                </div>
+                                <div class="context-item draggable" draggable="true" data-item="usermessage">
+                                    <span class="component-name">User Message</span>
+                                    <span class="component-source">📝 Current</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bottom: Workflow -->
+                        <div class="workflow-area">
+                            <div class="workflow-step">
+                                <div class="workflow-box">User Query</div>
+                                <div class="workflow-arrow">→</div>
+                            </div>
+                            <div class="workflow-loop">
+                                <div class="loop-container">
+                                    <div class="loop-box orchestrate">Orchestrate Context</div>
+                                    <div class="loop-arrows">
+                                        <span class="loop-arrow-right">→</span>
+                                        <span class="loop-arrow-left">←</span>
+                                    </div>
+                                    <div class="loop-box generate">Generate</div>
+                                </div>
+                                <div class="loop-label">iterates until complete</div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="workflow-arrow">→</div>
+                                <div class="workflow-box">Output</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight">
+                <strong>The key insight:</strong> The acronyms identified the right ingredients (role, context, examples, constraints). 
+                Context engineering is about designing the whole kitchen—systems that assemble the right context automatically for each task.
+            </div>
+
+            <div class="footer">
+                Click recipe cards or kitchen stations to explore the connections
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+        
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        function initializeResponsive() {
+            autoResize();
+            
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(autoResize, 50);
+            });
+            
+            window.addEventListener('orientationchange', () => {
+                setTimeout(autoResize, 100);
+            });
+        }
+
+        // Mapping from recipe ingredients to kitchen stations
+        const recipeToKitchen = {
+            'race': ['recipe', 'counter', 'prep'],  // Role→Recipe, Context→Prep, Action/Expectation→Counter
+            'risen': ['recipe', 'counter', 'prep'], // Similar mapping
+            'ape': ['counter', 'recipe']            // Action/Purpose/Expectation→Counter, Recipe
+        };
+
+        function selectRecipe(element, recipeId) {
+            // Clear previous selections
+            document.querySelectorAll('.recipe-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.kitchen-station').forEach(s => s.classList.remove('highlighted'));
+            
+            // Select this recipe
+            element.classList.add('selected');
+            
+            // Highlight corresponding kitchen stations
+            const stations = recipeToKitchen[recipeId] || [];
+            stations.forEach(stationId => {
+                const station = document.querySelector(`[data-station="${stationId}"]`);
+                if (station) {
+                    station.classList.add('highlighted');
+                }
+            });
+        }
+
+        function highlightStation(element, stationId) {
+            // Clear previous highlights
+            document.querySelectorAll('.kitchen-station').forEach(s => s.classList.remove('highlighted'));
+            document.querySelectorAll('.recipe-card').forEach(c => c.classList.remove('selected'));
+            
+            // Highlight this station
+            element.classList.add('highlighted');
+        }
+
+        // ============================================
+        // DRAG AND DROP FUNCTIONALITY
+        // ============================================
+        
+        let draggedItem = null;
+
+        function initDragAndDrop() {
+            const draggables = document.querySelectorAll('.draggable');
+            const dropZone = document.getElementById('counterDropZone');
+            const contextComponents = document.getElementById('contextComponents');
+
+            draggables.forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = item;
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+
+                item.addEventListener('dragend', () => {
+                    item.classList.remove('dragging');
+                    draggedItem = null;
+                });
+            });
+
+            // Drop zone events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+
+                if (draggedItem && !contextComponents.contains(draggedItem)) {
+                    // Hide the hint if it's visible
+                    const hint = contextComponents.querySelector('.drop-hint');
+                    if (hint) hint.classList.add('hidden');
+
+                    // Clone the item for the counter
+                    const clone = draggedItem.cloneNode(true);
+                    clone.classList.remove('draggable', 'dragging');
+                    clone.classList.add('in-counter');
+                    clone.removeAttribute('draggable');
+                    
+                    contextComponents.appendChild(clone);
+
+                    // Hide original (keep in DOM for reset)
+                    draggedItem.style.display = 'none';
+                }
+            });
+        }
+
+        function resetCounter() {
+            const contextComponents = document.getElementById('contextComponents');
+            
+            // Remove all items from counter except the hint
+            const items = contextComponents.querySelectorAll('.context-item');
+            items.forEach(item => item.remove());
+
+            // Show the hint again
+            const hint = contextComponents.querySelector('.drop-hint');
+            if (hint) hint.classList.remove('hidden');
+
+            // Show all original draggables
+            document.querySelectorAll('.draggable').forEach(item => {
+                item.style.display = 'flex';
+            });
+        }
+
+        // Initialize everything
+        initializeResponsive();
+        initDragAndDrop();
+    </script>
+</body>
+
+</html>
