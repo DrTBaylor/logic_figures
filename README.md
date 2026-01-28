@@ -2,15 +2,17 @@
 
 Interactive HTML figures and infographics hosted at [drtlinks.org](https://drtlinks.org)
 
+This is not meant as a public repo just yet.  Many of the graphics are undevelopment or have been abandoned as failed attempts.  
+
 ## AI & Prompting
 
 - [AI Context Infographic](ai-context-infographic.html)
 - [AI Context Infographic v2](ai-context-infographic-v2.html)
 - [AI Signal Noise Infographic](ai-signal-noise-infographic.html)
 - [AI Use Case Primitives](ai-use-case-primitives_1.html)
-- [Context Lifecycle Infographic](context-lifecycle.html)
-- [Modes of Processing Infographic](modes-of-processing-infographic.html)
-- [Prompting Strategies Infographic](prompting-strategies-infographic.html)
+- [Context Lifecycle Infographic](context-lifecycle.html)  
+- [Modes of Processing Infographic](modes-of-processing-infographic.html) (Fail)
+- [Prompting Strategies Infographic](prompting-strategies-infographic.html) (Fail)
 
 ## Digital Logic & Circuits
 
