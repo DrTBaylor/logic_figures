@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verilog Number Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #0d1117;
+        }
+
+        .viewport-container {
+            width: 100%;
+            max-width: 100vw;
+            aspect-ratio: 16 / 9;
+            max-height: 100vh;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .design-surface {
+            width: 1920px;
+            height: 1080px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: top left;
+            background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            color: #e6edf3;
+            padding: 30px 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 68px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .header .subtitle {
+            font-size: 28px;
+            color: #8b949e;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            gap: 40px;
+            flex: 1;
+        }
+
+        /* Left Panel - Input */
+        .input-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            font-size: 20px;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        }
+
+        /* Live Literal Display */
+        .literal-display {
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .literal-code {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 72px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .literal-code.error {
+            color: #f85149;
+        }
+
+        /* Input Controls */
+        .input-controls {
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group.flex-1 {
+            flex: 1;
+        }
+
+        .control-label {
+            font-size: 20px;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-input {
+            background: #0d1117;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #e6edf3;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 28px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .control-input:focus {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+        }
+
+        .control-input.error {
+            border-color: #f85149;
+            box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.2);
+        }
+
+        .control-input::placeholder {
+            color: #484f58;
+        }
+
+        select.control-input {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+
+        .width-input {
+            width: 120px;
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 6px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 64px;
+            height: 34px;
+            background: #21262d;
+            border-radius: 17px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #30363d;
+        }
+
+        .toggle-switch.active {
+            background: #238636;
+            border-color: #2ea043;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 22px;
+            height: 22px;
+            background: #e6edf3;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            left: 34px;
+        }
+
+        .toggle-label {
+            font-size: 24px;
+            color: #8b949e;
+        }
+
+        .toggle-label.active {
+            color: #e6edf3;
+        }
+
+        /* Bit Grid */
+        .bit-grid-container {
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bit-grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .bit-grid-label {
+            font-size: 20px;
+            color: #8b949e;
+        }
+
+        .sign-indicator {
+            font-size: 18px;
+            color: #a371f7;
+            background: rgba(163, 113, 247, 0.15);
+            padding: 6px 12px;
+            border-radius: 6px;
+        }
+
+        .bit-grid-wrapper {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            flex: 1;
+            align-items: center;
+        }
+
+        .bit-grid {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .bit-cell {
+            width: 56px;
+            height: 64px;
+            background: #21262d;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 40px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .bit-cell.bit-one {
+            background: #238636;
+            border-color: #2ea043;
+            color: white;
+        }
+
+        .bit-cell.bit-zero {
+            background: #21262d;
+            border-color: #30363d;
+            color: #6e7681;
+        }
+
+        .bit-cell.sign-bit {
+            box-shadow: 0 0 0 3px #a371f7;
+        }
+
+        .bit-positions {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .bit-pos {
+            width: 56px;
+            text-align: center;
+            font-size: 18px;
+            color: #6e7681;
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            flex-shrink: 0;
+        }
+
+        /* Right Panel - Output */
+        .output-panel {
+            width: 560px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .interp-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .interp-card {
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 10px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .interp-label {
+            font-size: 22px;
+            color: #8b949e;
+        }
+
+        .interp-value {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            font-size: 38px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .interp-card.unsigned .interp-value {
+            color: #58a6ff;
+        }
+
+        .interp-card.signed .interp-value {
+            color: #a371f7;
+        }
+
+        .interp-card.hex .interp-value {
+            color: #3fb950;
+        }
+
+        .interp-card.binary .interp-value {
+            color: #f0883e;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid #f85149;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            font-size: 20px;
+            color: #f85149;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-container" id="viewportContainer">
+        <div class="design-surface" id="designSurface">
+            <div class="header">
+                <h1>Verilog Number Calculator</h1>
+                <p class="subtitle">Build a literal and see all interpretations</p>
+            </div>
+
+            <div class="main-content">
+                <!-- Left Panel - Input -->
+                <div class="input-panel">
+                    <div class="panel-header">Build Your Literal</div>
+                    
+                    <div class="literal-display">
+                        <div class="literal-code" id="literalCode">8'b0000_0000</div>
+                    </div>
+
+                    <div class="input-controls">
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label class="control-label">Width (bits)</label>
+                                <input type="number" class="control-input width-input" id="widthInput" value="8" min="1" max="32">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label class="control-label">Signed</label>
+                                <div class="toggle-container">
+                                    <div class="toggle-switch" id="signedToggle"></div>
+                                    <span class="toggle-label" id="signedLabel">unsigned</span>
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label class="control-label">Base</label>
+                                <select class="control-input" id="baseSelect">
+                                    <option value="b">b - Binary</option>
+                                    <option value="h">h - Hex</option>
+                                    <option value="d">d - Decimal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="control-row">
+                            <div class="control-group flex-1">
+                                <label class="control-label">Value</label>
+                                <input type="text" class="control-input" id="valueInput" value="0" placeholder="Enter value...">
+                            </div>
+                        </div>
+
+                        <div class="error-message" id="errorMessage"></div>
+                    </div>
+
+                    <div class="bit-grid-container">
+                        <div class="bit-grid-header">
+                            <span class="bit-grid-label">Bit Pattern</span>
+                            <span class="sign-indicator" id="signIndicator" style="display: none;">MSB = sign bit</span>
+                        </div>
+                        <div class="bit-grid-wrapper">
+                            <div>
+                                <div class="bit-grid" id="bitGrid"></div>
+                                <div class="bit-positions" id="bitPositions"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Output -->
+                <div class="output-panel">
+                    <div class="panel-header">Interpretations</div>
+                    
+                    <div class="interp-cards">
+                        <div class="interp-card unsigned">
+                            <span class="interp-label">Unsigned Decimal</span>
+                            <span class="interp-value" id="unsignedVal">0</span>
+                        </div>
+                        <div class="interp-card signed">
+                            <span class="interp-label">Signed Decimal</span>
+                            <span class="interp-value" id="signedVal">0</span>
+                        </div>
+                        <div class="interp-card hex">
+                            <span class="interp-label">Hexadecimal</span>
+                            <span class="interp-value" id="hexVal">8'h00</span>
+                        </div>
+                        <div class="interp-card binary">
+                            <span class="interp-label">Binary</span>
+                            <span class="interp-value" id="binaryVal">8'b0000_0000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DESIGN_WIDTH = 1920;
+        const DESIGN_HEIGHT = 1080;
+
+        function autoResize() {
+            const container = document.getElementById('viewportContainer');
+            const surface = document.getElementById('designSurface');
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let containerWidth, containerHeight;
+            if (viewportWidth / viewportHeight > 16 / 9) {
+                containerHeight = viewportHeight;
+                containerWidth = containerHeight * (16 / 9);
+            } else {
+                containerWidth = viewportWidth;
+                containerHeight = containerWidth * (9 / 16);
+            }
+            
+            container.style.width = containerWidth + 'px';
+            container.style.height = containerHeight + 'px';
+            
+            const scale = containerWidth / DESIGN_WIDTH;
+            surface.style.transform = `scale(${scale})`;
+        }
+
+        autoResize();
+        window.addEventListener('resize', () => {
+            clearTimeout(window.resizeTimeout);
+            window.resizeTimeout = setTimeout(autoResize, 50);
+        });
+
+        // State
+        let state = {
+            width: 8,
+            signed: false,
+            base: 'b',
+            value: '0'
+        };
+
+        // DOM elements
+        const widthInput = document.getElementById('widthInput');
+        const signedToggle = document.getElementById('signedToggle');
+        const signedLabel = document.getElementById('signedLabel');
+        const baseSelect = document.getElementById('baseSelect');
+        const valueInput = document.getElementById('valueInput');
+        const literalCode = document.getElementById('literalCode');
+        const errorMessage = document.getElementById('errorMessage');
+        const signIndicator = document.getElementById('signIndicator');
+
+        // Parse value based on base
+        function parseValue(value, base, width, signed) {
+            let cleanValue = value.replace(/_/g, '').trim();
+            let num;
+            
+            // Handle negative decimal input
+            const isNegative = cleanValue.startsWith('-');
+            if (isNegative) {
+                cleanValue = cleanValue.slice(1);
+            }
+            
+            switch (base) {
+                case 'b':
+                    if (!/^[01]+$/.test(cleanValue)) return { error: 'Invalid binary digits (use 0-1)' };
+                    num = parseInt(cleanValue, 2);
+                    break;
+                case 'h':
+                    if (!/^[0-9a-fA-F]+$/.test(cleanValue)) return { error: 'Invalid hex digits (use 0-9, A-F)' };
+                    num = parseInt(cleanValue, 16);
+                    break;
+                case 'd':
+                    if (!/^[0-9]+$/.test(cleanValue)) return { error: 'Invalid decimal digits (use 0-9)' };
+                    num = parseInt(cleanValue, 10);
+                    break;
+            }
+            
+            if (isNegative) {
+                num = -num;
+            }
+            
+            const maxUnsigned = Math.pow(2, width);
+            const maxSigned = Math.pow(2, width - 1);
+            
+            // Handle negative numbers for signed
+            if (num < 0) {
+                if (!signed) {
+                    return { error: 'Negative values require signed literal' };
+                }
+                if (num < -maxSigned) {
+                    return { error: `Value ${num} too small for ${width}-bit signed (min: ${-maxSigned})` };
+                }
+                num = maxUnsigned + num; // Convert to unsigned representation
+            }
+            
+            if (num >= maxUnsigned) {
+                return { error: `Value too large for ${width} bits (max: ${maxUnsigned - 1})` };
+            }
+            
+            return { num };
+        }
+
+        // Format binary with underscores
+        function formatBinary(bits) {
+            if (bits.length <= 4) return bits;
+            let result = '';
+            for (let i = 0; i < bits.length; i++) {
+                if (i > 0 && (bits.length - i) % 4 === 0) {
+                    result += '_';
+                }
+                result += bits[i];
+            }
+            return result;
+        }
+
+        // Update display
+        function updateDisplay() {
+            const { width, signed, base, value } = state;
+            
+            // Clear error
+            errorMessage.classList.remove('visible');
+            valueInput.classList.remove('error');
+            literalCode.classList.remove('error');
+            
+            // Parse value
+            const result = parseValue(value, base, width, signed);
+            
+            if (result.error) {
+                errorMessage.textContent = result.error;
+                errorMessage.classList.add('visible');
+                valueInput.classList.add('error');
+                literalCode.classList.add('error');
+                literalCode.textContent = 'Invalid';
+                return;
+            }
+            
+            const num = result.num;
+            
+            // Build literal string
+            const signedStr = signed ? 's' : '';
+            let displayValue = value.replace(/_/g, '');
+            if (base === 'h') displayValue = displayValue.toUpperCase();
+            
+            // Add underscores for readability in binary
+            if (base === 'b' && displayValue.length > 4) {
+                displayValue = formatBinary(displayValue);
+            }
+            
+            literalCode.textContent = `${width}'${signedStr}${base}${displayValue}`;
+            
+            // Get bits
+            const bits = num.toString(2).padStart(width, '0').slice(-width);
+            
+            // Update bit grid
+            const bitGrid = document.getElementById('bitGrid');
+            const bitPositions = document.getElementById('bitPositions');
+            
+            bitGrid.innerHTML = '';
+            bitPositions.innerHTML = '';
+            
+            for (let i = 0; i < bits.length; i++) {
+                const cell = document.createElement('div');
+                cell.className = `bit-cell ${bits[i] === '1' ? 'bit-one' : 'bit-zero'}`;
+                if (i === 0 && signed) cell.classList.add('sign-bit');
+                cell.textContent = bits[i];
+                bitGrid.appendChild(cell);
+                
+                const pos = document.createElement('div');
+                pos.className = 'bit-pos';
+                pos.textContent = width - 1 - i;
+                bitPositions.appendChild(pos);
+            }
+            
+            // Show/hide sign indicator
+            signIndicator.style.display = signed ? 'block' : 'none';
+            
+            // Calculate interpretations
+            const unsigned = num;
+            let signedVal = unsigned;
+            if (bits[0] === '1') {
+                signedVal = unsigned - Math.pow(2, width);
+            }
+            
+            document.getElementById('unsignedVal').textContent = unsigned;
+            document.getElementById('signedVal').textContent = signedVal;
+            document.getElementById('hexVal').textContent = `${width}'h${unsigned.toString(16).toUpperCase().padStart(Math.ceil(width/4), '0')}`;
+            document.getElementById('binaryVal').textContent = `${width}'b${formatBinary(bits)}`;
+        }
+
+        // Event listeners
+        widthInput.addEventListener('input', () => {
+            let w = parseInt(widthInput.value) || 8;
+            w = Math.max(1, Math.min(32, w));
+            state.width = w;
+            updateDisplay();
+        });
+
+        signedToggle.addEventListener('click', () => {
+            state.signed = !state.signed;
+            signedToggle.classList.toggle('active', state.signed);
+            signedLabel.textContent = state.signed ? 'signed' : 'unsigned';
+            signedLabel.classList.toggle('active', state.signed);
+            updateDisplay();
+        });
+
+        baseSelect.addEventListener('change', () => {
+            // Convert current value to new base
+            const oldBase = state.base;
+            const newBase = baseSelect.value;
+            const result = parseValue(state.value, oldBase, state.width, state.signed);
+            
+            if (!result.error) {
+                const num = result.num;
+                switch (newBase) {
+                    case 'b': state.value = num.toString(2); break;
+                    case 'h': state.value = num.toString(16).toUpperCase(); break;
+                    case 'd': state.value = num.toString(10); break;
+                }
+                valueInput.value = state.value;
+            }
+            
+            state.base = newBase;
+            updateDisplay();
+        });
+
+        valueInput.addEventListener('input', () => {
+            state.value = valueInput.value;
+            updateDisplay();
+        });
+
+        // Initialize
+        updateDisplay();
+    </script>
+</body>
+</html>

@@ -46,6 +46,7 @@ This is not meant as a public repo just yet.  Many of the graphics are undevelop
 - [RTL vs Testbench (Responsive)](rtl_vs_testbench_responsive.html)
 - [SOP Event Propagation](sop_event_propagation.html)
 - [Testbench Thought Process](testbench_thought_process.html)
+- [Verilog Number Calculator](verilog-calculator.html)
 - [Verilog Simulation Timeline](verilog_simulation_timeline.html)
 - [Verilog Vectors](verilog_vectors.html)
 
