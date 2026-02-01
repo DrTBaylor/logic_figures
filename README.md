@@ -26,6 +26,7 @@ This is not meant as a public repo just yet.  Many of the graphics are undevelop
 - [FPGA Structure](fpga_structure.html)
 - [FSM Interaction](fsm_interaction.html)
 - [Memory Pyramid](memory_pyramid.html)
+- [NAND Implementation](nand-implementation.html)
 - [Noise Immunity](noise-immunity_2.html)
 - [Noise Immunity (alt)](noise-immunity_3.html)
 - [Nonvolatile Memory Figure](nonvolatile-memory-figure.html)
